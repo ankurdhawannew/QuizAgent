@@ -40,3 +40,6 @@ Thumbs.db
 # Streamlit
 .streamlit/
 
+# User quiz history
+user_quiz_history.json
+

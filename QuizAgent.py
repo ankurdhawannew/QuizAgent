@@ -4,6 +4,7 @@ import json
 import os
 from dotenv import load_dotenv
 from typing import List, Dict, Optional
+from datetime import datetime
 
 # Load environment variables
 load_dotenv()
@@ -20,12 +21,75 @@ SCORING = {
     "Hard": 4
 }
 
+# File to store user quiz history
+QUIZ_HISTORY_FILE = "user_quiz_history.json"
+
+def load_user_history() -> Dict:
+    """Load user quiz history from JSON file."""
+    if os.path.exists(QUIZ_HISTORY_FILE):
+        try:
+            with open(QUIZ_HISTORY_FILE, 'r') as f:
+                return json.load(f)
+        except (json.JSONDecodeError, IOError):
+            return {}
+    return {}
+
+def save_user_history(history: Dict):
+    """Save user quiz history to JSON file."""
+    try:
+        with open(QUIZ_HISTORY_FILE, 'w') as f:
+            json.dump(history, f, indent=2)
+    except IOError as e:
+        st.error(f"Error saving quiz history: {e}")
+
+def get_user_previous_questions(user_name: str, grade: int, board: str, topic: str) -> List[str]:
+    """Get list of previous question texts for a user with same parameters."""
+    history = load_user_history()
+    if user_name not in history:
+        return []
+    
+    user_history = history[user_name]
+    previous_questions = []
+    
+    # Collect all questions from previous quizzes with same parameters
+    for quiz in user_history.get("quizzes", []):
+        if (quiz.get("grade") == grade and 
+            quiz.get("board") == board and 
+            quiz.get("topic", "").lower() == topic.lower()):
+            previous_questions.extend(quiz.get("questions", []))
+    
+    return previous_questions
+
+def save_user_quiz(user_name: str, grade: int, board: str, topic: str, questions: List[Dict]):
+    """Save generated questions for a user."""
+    history = load_user_history()
+    
+    if user_name not in history:
+        history[user_name] = {"quizzes": []}
+    
+    # Extract question texts for tracking
+    question_texts = [q.get("question", "") for q in questions]
+    
+    # Add new quiz entry
+    quiz_entry = {
+        "grade": grade,
+        "board": board,
+        "topic": topic,
+        "questions": question_texts,
+        "timestamp": datetime.now().isoformat()
+    }
+    
+    history[user_name]["quizzes"].append(quiz_entry)
+    save_user_history(history)
+
 def generate_questions(
     grade: int,
     board: str,
     topic: str,
     num_questions: int,
-    difficulty_distribution: Dict[str, int]
+    difficulty_distribution: Dict[str, int],
+    user_name: Optional[str] = None,
+    previous_questions: Optional[List[str]] = None
 ) -> List[Dict]:
     """
     Generate quiz questions using a LLM.
@@ -36,6 +100,8 @@ def generate_questions(
         topic: Math topic
         num_questions: Total number of questions
         difficulty_distribution: Dictionary with Easy, Medium, Hard percentages
+        user_name: Optional user name for tracking
+        previous_questions: Optional list of previous question texts to avoid
         
     Returns:
         List of question dictionaries
@@ -50,6 +116,17 @@ def generate_questions(
     hard_count = num_questions - easy_count - medium_count  # Ensure total matches
     
     # Create prompt for question generation
+    uniqueness_note = ""
+    if previous_questions and len(previous_questions) > 0:
+        uniqueness_note = f"""
+
+IMPORTANT: The user has already seen questions on this topic. You MUST generate completely NEW and DIFFERENT questions. 
+Do NOT repeat or rephrase any of these previously asked questions:
+{chr(10).join([f"- {q}" for q in previous_questions[:10]])}  # Show max 10 to avoid prompt bloat
+{"... and more" if len(previous_questions) > 10 else ""}
+
+Generate fresh, unique questions that the user has not seen before."""
+
     prompt = f"""Generate {num_questions} multiple-choice math questions for Grade {grade} students following the {board} curriculum.
 
 Topic: {topic}
@@ -57,6 +134,7 @@ Difficulty Distribution:
 - Easy: {easy_count} questions
 - Medium: {medium_count} questions  
 - Hard: {hard_count} questions
+{uniqueness_note}
 
 Requirements:
 1. Each question must have exactly 4 options (A, B, C, D)
@@ -64,6 +142,7 @@ Requirements:
 3. Questions should be appropriate for Grade {grade} level and {board} curriculum
 4. Questions should cover the topic: {topic}
 5. Difficulty levels should match the distribution above
+6. Questions must be unique and different from any previously asked questions
 
 Return the response as a JSON array with the following structure:
 [
@@ -138,6 +217,8 @@ def initialize_session_state():
         st.session_state.show_feedback = False
     if "quiz_completed" not in st.session_state:
         st.session_state.quiz_completed = False
+    if "user_name" not in st.session_state:
+        st.session_state.user_name = ""
 
 def reset_quiz():
     """Reset quiz state."""
@@ -148,6 +229,7 @@ def reset_quiz():
     st.session_state.quiz_started = False
     st.session_state.show_feedback = False
     st.session_state.quiz_completed = False
+    # Note: user_name is preserved on reset
 
 def main():
     st.set_page_config(page_title="Math Quiz Agent", page_icon="📚", layout="wide")
@@ -161,6 +243,21 @@ def main():
     with st.sidebar:
         st.header("Quiz Configuration")
         
+        # User name input
+        st.subheader("User Information")
+        user_name = st.text_input("Your Name", value=st.session_state.user_name, placeholder="Enter your name")
+        if user_name:
+            # Check if name changed before updating
+            previous_name = st.session_state.get("user_name", "")
+            if user_name != previous_name and previous_name and st.session_state.quiz_started:
+                # If name changed, reset quiz
+                reset_quiz()
+            st.session_state.user_name = user_name
+        else:
+            st.warning("⚠️ Please enter your name to start the quiz")
+        
+        st.divider()
+        
         # Grade selection
         grade = st.selectbox("Grade", options=list(range(6, 13)), index=0)
         
@@ -168,7 +265,7 @@ def main():
         board = st.selectbox("Board", options=["CBSE", "ICSE", "IB"])
         
         # Topic input
-        topic = st.text_input("Math Topic", placeholder="e.g., Algebra, Geometry, Trigonometry")
+        topic = st.text_input("Math Topic", placeholder="e.g., Simple Equations, Mensuration, Geometry, Trigonometry")
         
         # Difficulty distribution
         st.subheader("Difficulty Distribution")
@@ -194,20 +291,30 @@ def main():
         }
         
         # Number of questions
-        num_questions = st.number_input("Number of Questions", min_value=1, max_value=50, value=10, step=1)
+        num_questions = st.number_input("Number of Questions", min_value=1, max_value=20, value=10, step=1)
         
         # Generate quiz button
-        if st.button("Generate Quiz", type="primary", disabled=not can_start or not topic):
-            if not topic:
+        if st.button("Generate Quiz", type="primary", disabled=not can_start or not topic or not user_name):
+            if not user_name:
+                st.error("Please enter your name")
+            elif not topic:
                 st.error("Please enter a math topic")
             else:
+                # Get previous questions for this user
+                previous_questions = get_user_previous_questions(user_name, grade, board, topic)
+                
+                if previous_questions:
+                    st.info(f"📝 You've taken {len([q for q in load_user_history().get(user_name, {}).get('quizzes', []) if q.get('grade') == grade and q.get('board') == board and q.get('topic', '').lower() == topic.lower()])} quiz(zes) on this topic. Generating new questions...")
+                
                 with st.spinner("Generating questions..."):
                     questions = generate_questions(
                         grade=grade,
                         board=board,
                         topic=topic,
                         num_questions=num_questions,
-                        difficulty_distribution=difficulty_distribution
+                        difficulty_distribution=difficulty_distribution,
+                        user_name=user_name,
+                        previous_questions=previous_questions
                     )
                     
                     if questions:
@@ -218,6 +325,10 @@ def main():
                         st.session_state.score = 0
                         st.session_state.show_feedback = False
                         st.session_state.quiz_completed = False
+                        
+                        # Save quiz to user history
+                        save_user_quiz(user_name, grade, board, topic, questions)
+                        
                         st.success(f"Generated {len(questions)} questions!")
                         st.rerun()
                     else:
