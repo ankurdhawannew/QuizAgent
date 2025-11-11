@@ -5,6 +5,7 @@ import os
 from dotenv import load_dotenv
 from typing import List, Dict, Optional
 from datetime import datetime
+from coaching_agent import get_coaching_response, start_coaching_session
 
 # Load environment variables
 load_dotenv()
@@ -219,6 +220,12 @@ def initialize_session_state():
         st.session_state.quiz_completed = False
     if "user_name" not in st.session_state:
         st.session_state.user_name = ""
+    if "coaching_active" not in st.session_state:
+        st.session_state.coaching_active = False
+    if "coaching_messages" not in st.session_state:
+        st.session_state.coaching_messages = []
+    if "coaching_complete" not in st.session_state:
+        st.session_state.coaching_complete = False
 
 def reset_quiz():
     """Reset quiz state."""
@@ -229,6 +236,9 @@ def reset_quiz():
     st.session_state.quiz_started = False
     st.session_state.show_feedback = False
     st.session_state.quiz_completed = False
+    st.session_state.coaching_active = False
+    st.session_state.coaching_messages = []
+    st.session_state.coaching_complete = False
     # Note: user_name is preserved on reset
 
 def main():
@@ -425,6 +435,10 @@ def main():
                 if selected_answer is not None:
                     st.session_state.user_answers.append(selected_answer)
                     st.session_state.show_feedback = True
+                    # Reset coaching state for new answer
+                    st.session_state.coaching_active = False
+                    st.session_state.coaching_messages = []
+                    st.session_state.coaching_complete = False
                     st.rerun()
             else:
                 # Show feedback
@@ -434,38 +448,154 @@ def main():
                 
                 if is_correct:
                     st.success(f"✓ Correct! You selected {chr(65+user_answer)}. {question['options'][user_answer]}")
-                    # Add points
-                    #points = SCORING.get(difficulty, 1)
-                    #st.session_state.score += points
+                    # Calculate points
+                    points = SCORING.get(difficulty, 1)
+                    st.session_state.coaching_complete = True
                     st.balloons()
                 else:
+                    points = 0
+                    # Wrong answer - offer coaching
                     st.error(f"✗ Incorrect. You selected {chr(65+user_answer)}. {question['options'][user_answer]}")
-                    st.info(f"Correct answer: {chr(65+correct_answer_idx)}. {question['options'][correct_answer_idx]}")
-                
-                # Show all options with markers
-                st.markdown("**All Options:**")
-                for idx, option in enumerate(question["options"]):
-                    marker = ""
-                    if idx == correct_answer_idx:
-                        marker = " ✓ Correct"
-                    if idx == user_answer and not is_correct:
-                        marker = " ✗ Your Answer"
-                    st.markdown(f"{chr(65+idx)}. {option}{marker}")
-                
-                # Next button
-                if st.session_state.current_question_index < len(st.session_state.questions) - 1:
-                    if st.button("Next Question", type="primary"):
-                        st.session_state.current_question_index += 1
-                        st.session_state.show_feedback = False
-                        points = SCORING.get(difficulty, 1)
-                        st.session_state.score += points
-                        st.rerun()
-                else:
-                    if st.button("View Results", type="primary"):
-                        st.session_state.quiz_completed = True
-                        points = SCORING.get(difficulty, 1)
-                        st.session_state.score += points
-                        st.rerun()
+                    
+                    # Show all options with markers (but not the correct answer yet)
+                    st.markdown("**All Options:**")
+                    for idx, option in enumerate(question["options"]):
+                        marker = ""
+                        if idx == user_answer:
+                            marker = " ✗ Your Answer"
+                        st.markdown(f"{chr(65+idx)}. {option}{marker}")
+                    
+                    # Coaching section
+                    if not st.session_state.coaching_active and not st.session_state.coaching_complete:
+                        st.info("💡 Want to understand why your answer is incorrect? Get personalized coaching using the Socratic method!")
+                        col1, col2 = st.columns([1, 1])
+                        with col1:
+                            if st.button("🎓 Get Coaching", type="primary", use_container_width=True):
+                                st.session_state.coaching_active = True
+                                st.session_state.coaching_messages = []
+                                st.session_state.coaching_complete = False
+                                
+                                # Start coaching session
+                                with st.spinner("Starting coaching session..."):
+                                    coaching_session = start_coaching_session(
+                                        question=question['question'],
+                                        options=question['options'],
+                                        user_answer=user_answer,
+                                        correct_answer=correct_answer_idx
+                                    )
+                                    
+                                    if coaching_session and coaching_session.get("initial_message"):
+                                        st.session_state.coaching_messages.append({
+                                            "role": "coach",
+                                            "content": coaching_session["initial_message"]
+                                        })
+                                st.rerun()
+                        
+                        with col2:
+                            if st.button("Skip to Answer", use_container_width=True):
+                                st.session_state.coaching_complete = True
+                                st.session_state.coaching_active = False
+                                st.session_state.coaching_messages = []
+                                st.rerun()
+                    
+                    # Show coaching conversation
+                    if st.session_state.coaching_active:
+                        st.divider()
+                        st.subheader("🎓 Coaching Session")
+                        
+                        # Display coaching messages
+                        for msg in st.session_state.coaching_messages:
+                            if msg["role"] == "coach":
+                                with st.chat_message("assistant"):
+                                    st.markdown(msg["content"])
+                            elif msg["role"] == "student":
+                                with st.chat_message("user"):
+                                    st.markdown(msg["content"])
+                        
+                        # If coaching is complete, show the answer
+                        if st.session_state.coaching_complete:
+                            st.success(f"✅ Correct answer: {chr(65+correct_answer_idx)}. {question['options'][correct_answer_idx]}")
+                        else:
+                            # Student response input
+                            student_response = st.chat_input("Type your response or question here...")
+                            
+                            if student_response:
+                                # Add student message
+                                st.session_state.coaching_messages.append({
+                                    "role": "student",
+                                    "content": student_response
+                                })
+                                
+                                # Get coaching response
+                                with st.spinner("Coach is thinking..."):
+                                    coaching_response = get_coaching_response(
+                                        question=question['question'],
+                                        options=question['options'],
+                                        user_answer=user_answer,
+                                        correct_answer=correct_answer_idx,
+                                        student_response=student_response,
+                                        conversation_history=st.session_state.coaching_messages
+                                    )
+                                    
+                                    if coaching_response:
+                                        st.session_state.coaching_messages.append({
+                                            "role": "coach",
+                                            "content": coaching_response
+                                        })
+                                        
+                                        # Check if answer was revealed
+                                        if "correct answer" in coaching_response.lower() or "answer is" in coaching_response.lower():
+                                            st.session_state.coaching_complete = True
+                                
+                                st.rerun()
+                            
+                            # Option to skip to answer
+                            if st.button("Show Answer", key="show_answer"):
+                                st.session_state.coaching_complete = True
+                                st.rerun()
+                        
+                        # Show answer if coaching is complete
+                        #if st.session_state.coaching_complete:
+                        #    st.success(f"✅ Correct answer: {chr(65+correct_answer_idx)}. {question['options'][correct_answer_idx]}")
+                    
+                    # Show correct answer if coaching was skipped (coaching_complete but not active)
+                if st.session_state.coaching_complete and not st.session_state.coaching_active:
+                    if not is_correct:
+                        st.divider()
+                        st.success(f"✅ Correct answer: {chr(65+correct_answer_idx)}. {question['options'][correct_answer_idx]}")
+                        
+                    # Show all options with markers
+                    st.markdown("**All Options:**")
+                    for idx, option in enumerate(question["options"]):
+                        marker = ""
+                        if idx == correct_answer_idx:
+                            marker = " ✓ Correct Answer"
+                        if idx == user_answer and not is_correct:
+                            marker = " ✗ Your Answer (Incorrect)"
+                        st.markdown(f"{chr(65+idx)}. {option}{marker}")
+                    
+                # Next button (only show if coaching is complete or skipped)
+                # Show next button only when coaching_complete is True (either through coaching or skip)
+                if st.session_state.coaching_complete:
+                    st.divider()
+                        
+                    if st.session_state.current_question_index < len(st.session_state.questions) - 1:
+                        if st.button("Next Question", type="primary", key="next_after_coaching"):
+                            st.session_state.current_question_index += 1
+                            st.session_state.show_feedback = False
+                            st.session_state.coaching_active = False
+                            st.session_state.coaching_messages = []
+                            st.session_state.coaching_complete = False
+                            st.session_state.score += points
+                            st.rerun()
+                    else:
+                        if st.button("View Results", type="primary", key="results_after_coaching"):
+                            st.session_state.quiz_completed = True
+                            st.session_state.coaching_active = False
+                            st.session_state.coaching_messages = []
+                            st.session_state.coaching_complete = False
+                            st.session_state.score += points
+                            st.rerun()
 
 if __name__ == "__main__":
     main()
