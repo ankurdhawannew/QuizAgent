@@ -32,15 +32,37 @@ def initialize_database():
             question TEXT NOT NULL,
             options TEXT NOT NULL,  -- JSON array of options
             correct_answer INTEGER NOT NULL CHECK(correct_answer >= 0 AND correct_answer <= 3),
+            is_valid INTEGER DEFAULT 1 CHECK(is_valid IN (0, 1)),  -- 1 = valid, 0 = invalid (reported)
+            reported_at TIMESTAMP NULL,  -- Timestamp when question was reported as invalid
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(grade, board, topic, question)  -- Prevent duplicate questions
         )
     """)
     
+    # Add is_valid and reported_at columns to existing tables if they don't exist
+    try:
+        cursor.execute("ALTER TABLE questions ADD COLUMN is_valid INTEGER DEFAULT 1")
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+    
+    try:
+        cursor.execute("ALTER TABLE questions ADD COLUMN reported_at TIMESTAMP NULL")
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+    
+    # Update existing rows to have is_valid = 1 if NULL
+    cursor.execute("UPDATE questions SET is_valid = 1 WHERE is_valid IS NULL")
+    
     # Create index for faster queries
     cursor.execute("""
         CREATE INDEX IF NOT EXISTS idx_grade_board_topic_difficulty 
         ON questions(grade, board, topic, difficulty)
+    """)
+    
+    # Create index for filtering valid questions
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_is_valid 
+        ON questions(is_valid)
     """)
     
     conn.commit()
@@ -130,7 +152,7 @@ def get_questions(
     cursor.execute(f"""
         SELECT question, options, correct_answer, difficulty
         FROM questions
-        WHERE grade = ? AND board = ? AND topic = ? AND difficulty = ?
+        WHERE grade = ? AND board = ? AND topic = ? AND difficulty = ? AND is_valid = 1
         {order_clause}
         {limit_clause}
     """, (grade, board, topic, difficulty))
@@ -174,13 +196,13 @@ def count_questions(
         cursor.execute("""
             SELECT COUNT(*) as count
             FROM questions
-            WHERE grade = ? AND board = ? AND topic = ? AND difficulty = ?
+            WHERE grade = ? AND board = ? AND topic = ? AND difficulty = ? AND is_valid = 1
         """, (grade, board, topic, difficulty))
     else:
         cursor.execute("""
             SELECT COUNT(*) as count
             FROM questions
-            WHERE grade = ? AND board = ? AND topic = ?
+            WHERE grade = ? AND board = ? AND topic = ? AND is_valid = 1
         """, (grade, board, topic))
     
     result = cursor.fetchone()
@@ -299,35 +321,143 @@ def get_partial_questions_and_missing_counts(
     
     return all_questions, missing_counts
 
-def delete_question(
+def mark_question_invalid(
     grade: int,
     board: str,
     topic: str,
     question_text: str
 ) -> bool:
     """
-    Delete a question from the database.
+    Mark a question as invalid (reported) in the database instead of deleting it.
+    This allows tracking of reported questions for quality reports.
     
     Args:
         grade: Grade level (6-12)
         board: Education board (CBSE, ICSE, IB)
         topic: Math topic
-        question_text: The exact question text to delete
+        question_text: The exact question text to mark as invalid
         
     Returns:
-        True if question was deleted, False if not found
+        True if question was marked as invalid, False if not found
     """
     conn = get_db_connection()
     cursor = conn.cursor()
     
     cursor.execute("""
-        DELETE FROM questions
-        WHERE grade = ? AND board = ? AND topic = ? AND question = ?
+        UPDATE questions
+        SET is_valid = 0, reported_at = CURRENT_TIMESTAMP
+        WHERE grade = ? AND board = ? AND topic = ? AND question = ? AND is_valid = 1
     """, (grade, board, topic, question_text))
     
-    deleted = cursor.rowcount > 0
+    updated = cursor.rowcount > 0
     conn.commit()
     conn.close()
     
-    return deleted
+    return updated
+
+def get_invalid_questions_report(
+    grade: Optional[int] = None,
+    board: Optional[str] = None,
+    topic: Optional[str] = None
+) -> List[Dict]:
+    """
+    Get a report of all invalid (reported) questions for analysis.
+    
+    Args:
+        grade: Optional grade level filter
+        board: Optional board filter
+        topic: Optional topic filter
+        
+    Returns:
+        List of dictionaries with question details and when they were reported
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    conditions = ["is_valid = 0"]
+    params = []
+    
+    if grade:
+        conditions.append("grade = ?")
+        params.append(grade)
+    if board:
+        conditions.append("board = ?")
+        params.append(board)
+    if topic:
+        conditions.append("topic = ?")
+        params.append(topic)
+    
+    where_clause = " AND ".join(conditions)
+    
+    cursor.execute(f"""
+        SELECT id, grade, board, topic, difficulty, question, options, correct_answer, reported_at, created_at
+        FROM questions
+        WHERE {where_clause}
+        ORDER BY reported_at DESC
+    """, params)
+    
+    rows = cursor.fetchall()
+    conn.close()
+    
+    report = []
+    for row in rows:
+        report.append({
+            "id": row["id"],
+            "grade": row["grade"],
+            "board": row["board"],
+            "topic": row["topic"],
+            "difficulty": row["difficulty"],
+            "question": row["question"],
+            "options": json.loads(row["options"]),
+            "correct_answer": int(row["correct_answer"]),
+            "reported_at": row["reported_at"],
+            "created_at": row["created_at"]
+        })
+    
+    return report
+
+def count_invalid_questions(
+    grade: Optional[int] = None,
+    board: Optional[str] = None,
+    topic: Optional[str] = None
+) -> int:
+    """
+    Count invalid (reported) questions.
+    
+    Args:
+        grade: Optional grade level filter
+        board: Optional board filter
+        topic: Optional topic filter
+        
+    Returns:
+        Number of invalid questions
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    conditions = ["is_valid = 0"]
+    params = []
+    
+    if grade:
+        conditions.append("grade = ?")
+        params.append(grade)
+    if board:
+        conditions.append("board = ?")
+        params.append(board)
+    if topic:
+        conditions.append("topic = ?")
+        params.append(topic)
+    
+    where_clause = " AND ".join(conditions)
+    
+    cursor.execute(f"""
+        SELECT COUNT(*) as count
+        FROM questions
+        WHERE {where_clause}
+    """, params)
+    
+    result = cursor.fetchone()
+    conn.close()
+    
+    return result["count"] if result else 0
 

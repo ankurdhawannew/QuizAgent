@@ -12,7 +12,9 @@ from question_database import (
     get_partial_questions_and_missing_counts,
     save_questions,
     count_questions,
-    delete_question
+    mark_question_invalid,
+    get_invalid_questions_report,
+    count_invalid_questions
 )
 
 # Load environment variables
@@ -386,7 +388,20 @@ def render_error_reporting_ui(question: Dict, current_q_idx: int):
         current_q_idx: Current question index
     """
     question_reported = current_q_idx in st.session_state.reported_questions
+    report_submitted = current_q_idx in st.session_state.submitted_reports
+    verification_result = st.session_state.report_verification_results.get(current_q_idx)
     
+    # If report has already been submitted (regardless of verification result), don't show reporting UI
+    if report_submitted:
+        if question_reported:
+            st.error("⚠️ **Report Verified:** We apologize for the error in this question. The question has been removed from your quiz and will not count towards your score.")
+        elif verification_result is False:
+            st.warning("⚠️ **Report Reviewed:** After review, we found that the question is correct. Please continue with the quiz.")
+        else:
+            st.info("ℹ️ You have already submitted a report for this question. Please continue with the quiz.")
+        return
+    
+    # If question was verified as invalid, show warning
     if question_reported:
         st.warning("⚠️ This question has been reported and removed from scoring.")
         return
@@ -423,6 +438,9 @@ def render_error_reporting_ui(question: Dict, current_q_idx: int):
                 if not grade or not board or not topic:
                     st.error(f"⚠️ Quiz configuration missing. Grade: {grade}, Board: {board}, Topic: {topic}. Please restart the quiz.")
                 else:
+                    # Mark that a report has been submitted for this question
+                    st.session_state.submitted_reports.add(current_q_idx)
+                    
                     # Verify the error report
                     with st.spinner("Verifying error report..."):
                         try:
@@ -434,30 +452,32 @@ def render_error_reporting_ui(question: Dict, current_q_idx: int):
                                 topic=topic
                             )
                             
+                            # Store verification result in session state
+                            st.session_state.report_verification_results[current_q_idx] = is_valid
+                            
                             if is_valid:
-                                # Error verified - apologize, remove from scoring, delete from DB
-                                st.error("⚠️ We apologize for the error in this question. The question has been removed from your quiz and will not count towards your score.")
-                                
-                                # Mark question as reported
+                                # Error verified - apologize, remove from scoring, mark as invalid in DB
+                                # Mark question as reported and verified as invalid
                                 st.session_state.reported_questions.add(current_q_idx)
                                 
-                                # Delete question from database
-                                delete_question(
+                                # Mark question as invalid in database (instead of deleting)
+                                mark_question_invalid(
                                     grade=grade,
                                     board=board,
                                     topic=topic,
                                     question_text=question['question']
                                 )
-                                
-                                # Reset error report state
-                                st.session_state.error_report_active = False
-                                st.session_state.error_type_selected = None
-                                
-                                st.rerun()
-                            else:
-                                st.warning("After review, we found that the question is correct. Please try again or continue with the quiz.")
+                            
+                            # Reset error report state after submission (regardless of verification result)
+                            st.session_state.error_report_active = False
+                            st.session_state.error_type_selected = None
+                            
+                            st.rerun()
                         except Exception as e:
                             st.error(f"Error verifying report: {str(e)}. Please try again.")
+                            # Still mark as submitted even if there was an error, to prevent multiple attempts
+                            st.session_state.error_report_active = False
+                            st.session_state.error_type_selected = None
                             
         with col2:
             if st.button("Cancel", use_container_width=True, key=f"cancel_error_{current_q_idx}"):
@@ -490,7 +510,11 @@ def initialize_session_state():
     if "coaching_complete" not in st.session_state:
         st.session_state.coaching_complete = False
     if "reported_questions" not in st.session_state:
-        st.session_state.reported_questions = set()  # Track question indices that were reported and verified
+        st.session_state.reported_questions = set()  # Track question indices that were reported and verified as invalid
+    if "submitted_reports" not in st.session_state:
+        st.session_state.submitted_reports = set()  # Track question indices that have had reports submitted (regardless of verification result)
+    if "report_verification_results" not in st.session_state:
+        st.session_state.report_verification_results = {}  # Track verification results: {question_idx: True/False}
     if "error_report_active" not in st.session_state:
         st.session_state.error_report_active = False
     if "error_type_selected" not in st.session_state:
@@ -515,6 +539,8 @@ def reset_quiz():
     st.session_state.coaching_messages = []
     st.session_state.coaching_complete = False
     st.session_state.reported_questions = set()
+    st.session_state.submitted_reports = set()
+    st.session_state.report_verification_results = {}
     st.session_state.error_report_active = False
     st.session_state.error_type_selected = None
     st.session_state.quiz_grade = None
@@ -737,10 +763,11 @@ def main():
             # Show error reporting option before user answers
             current_q_idx = st.session_state.current_question_index
             question_reported = current_q_idx in st.session_state.reported_questions
+            report_submitted = current_q_idx in st.session_state.submitted_reports
             
             if not st.session_state.show_feedback:
-                # Show error reporting UI before answering
-                if not question_reported:
+                # Show error reporting UI before answering (only if not already submitted)
+                if not report_submitted:
                     render_error_reporting_ui(question, current_q_idx)
                 
                 # If question was reported before answering, allow skipping
@@ -772,8 +799,19 @@ def main():
                             if len(st.session_state.user_answers) <= current_q_idx:
                                 st.session_state.user_answers.append(-1)  # -1 indicates skipped/reported
                             st.rerun()
-                else:
-                    # Display options as buttons
+                elif report_submitted:
+                    # Report was submitted - show verification result
+                    verification_result = st.session_state.report_verification_results.get(current_q_idx)
+                    if question_reported:
+                        st.error("⚠️ **Report Verified:** We apologize for the error in this question. The question has been removed from your quiz and will not count towards your score.")
+                    elif verification_result is False:
+                        st.warning("⚠️ **Report Reviewed:** After review, we found that the question is correct. You can still answer it.")
+                    else:
+                        st.info("ℹ️ You have already submitted a report for this question. You can still answer it.")
+                    # Continue to show options below
+                
+                # Display options as buttons (show for both cases: no report submitted OR report submitted but not verified)
+                if not question_reported:
                     selected_answer = None
                     
                     col1, col2 = st.columns(2)
@@ -980,9 +1018,20 @@ def main():
                             marker = " ✗ Your Answer (Incorrect)"
                         st.markdown(f"{chr(65+idx)}. {option}{marker}")
                     
-                # Error reporting section (also available after feedback)
-                if st.session_state.coaching_complete and not question_reported:
+                # Error reporting section (also available after feedback, but only if not already submitted)
+                report_submitted_after = current_q_idx in st.session_state.submitted_reports
+                if st.session_state.coaching_complete and not report_submitted_after:
                     render_error_reporting_ui(question, current_q_idx)
+                
+                # If report was submitted, show verification result
+                if st.session_state.coaching_complete and report_submitted_after:
+                    verification_result_after = st.session_state.report_verification_results.get(current_q_idx)
+                    if question_reported:
+                        st.error("⚠️ **Report Verified:** We apologize for the error in this question. The question has been removed from your quiz and will not count towards your score.")
+                    elif verification_result_after is False:
+                        st.warning("⚠️ **Report Reviewed:** After review, we found that the question is correct. Please continue with the quiz.")
+                    else:
+                        st.info("ℹ️ You have already submitted a report for this question. Please continue with the quiz.")
                 
                 # Next button (only show if coaching is complete or skipped)
                 # Show next button only when coaching_complete is True (either through coaching or skip)
