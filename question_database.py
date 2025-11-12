@@ -299,3 +299,35 @@ def get_partial_questions_and_missing_counts(
     
     return all_questions, missing_counts
 
+def delete_question(
+    grade: int,
+    board: str,
+    topic: str,
+    question_text: str
+) -> bool:
+    """
+    Delete a question from the database.
+    
+    Args:
+        grade: Grade level (6-12)
+        board: Education board (CBSE, ICSE, IB)
+        topic: Math topic
+        question_text: The exact question text to delete
+        
+    Returns:
+        True if question was deleted, False if not found
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        DELETE FROM questions
+        WHERE grade = ? AND board = ? AND topic = ? AND question = ?
+    """, (grade, board, topic, question_text))
+    
+    deleted = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    
+    return deleted
+

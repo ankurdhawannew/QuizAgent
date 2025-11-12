@@ -11,7 +11,8 @@ from question_database import (
     get_questions_by_difficulty_distribution,
     get_partial_questions_and_missing_counts,
     save_questions,
-    count_questions
+    count_questions,
+    delete_question
 )
 
 # Load environment variables
@@ -312,6 +313,158 @@ Generate exactly {total_to_generate} questions with the specified difficulty dis
         st.error(f"Error generating questions: {e}")
         return []
 
+def verify_error_report(
+    question: Dict,
+    error_type: str,
+    grade: int,
+    board: str,
+    topic: str
+) -> bool:
+    """
+    Verify if the user's error report is valid using LLM.
+    
+    Args:
+        question: Question dictionary with question, options, correct_answer
+        error_type: Type of error reported ("missing_answer", "multiple_correct", "incomplete")
+        grade: Grade level
+        board: Education board
+        topic: Math topic
+        
+    Returns:
+        True if error is verified, False otherwise
+    """
+    if not GOOGLE_API_KEY:
+        return False
+    
+    error_descriptions = {
+        "missing_answer": "The correct answer is missing from the provided options",
+        "multiple_correct": "More than one option is correct",
+        "incomplete": "The question is incomplete or unclear"
+    }
+    
+    error_description = error_descriptions.get(error_type, error_type)
+    
+    prompt = f"""You are an expert math educator reviewing a quiz question for Grade {grade} students following the {board} curriculum.
+
+Question: {question['question']}
+Options:
+A. {question['options'][0]}
+B. {question['options'][1]}
+C. {question['options'][2]}
+D. {question['options'][3]}
+Marked Correct Answer: {chr(65 + question['correct_answer'])}. {question['options'][question['correct_answer']]}
+
+A student has reported the following error: {error_description}
+
+Please carefully analyze the question and verify if the student's claim is correct. Consider:
+1. Is the question complete and clear?
+2. Are all options valid and distinct?
+3. Is the marked correct answer actually correct?
+4. Are there multiple correct answers?
+5. Is the correct answer missing from the options?
+
+Respond with ONLY "YES" if the error report is valid and correct, or "NO" if the error report is invalid or incorrect. Do not provide any explanation, just YES or NO."""
+
+    try:
+        model = genai.GenerativeModel('gemini-2.5-pro')
+        response = model.generate_content(prompt)
+        response_text = response.text.strip().upper()
+        
+        return response_text.startswith("YES")
+    except Exception as e:
+        # Don't show error here - let the caller handle it
+        # This prevents duplicate error messages
+        print(f"Error in verify_error_report: {e}")
+        return False
+
+def render_error_reporting_ui(question: Dict, current_q_idx: int):
+    """
+    Render the error reporting UI component.
+    
+    Args:
+        question: Question dictionary
+        current_q_idx: Current question index
+    """
+    question_reported = current_q_idx in st.session_state.reported_questions
+    
+    if question_reported:
+        st.warning("⚠️ This question has been reported and removed from scoring.")
+        return
+    
+    st.divider()
+    st.markdown("**Report an Error**")
+    
+    if not st.session_state.error_report_active:
+        if st.button("🚨 Report Error", key=f"report_error_btn_{current_q_idx}"):
+            st.session_state.error_report_active = True
+            st.rerun()
+    else:
+        st.info("Please select the type of error:")
+        error_type = st.radio(
+            "Error Type:",
+            options=["missing_answer", "multiple_correct", "incomplete"],
+            format_func=lambda x: {
+                "missing_answer": "1. Right answer missing in the options",
+                "multiple_correct": "2. More than one options are correct",
+                "incomplete": "3. Question is incomplete"
+            }[x],
+            key=f"error_type_radio_{current_q_idx}"
+        )
+        
+        col1, col2 = st.columns([1, 1])
+        with col1:
+            if st.button("Submit Report", type="primary", use_container_width=True, key=f"submit_error_{current_q_idx}"):
+                # Get grade, board, topic from session state
+                grade = st.session_state.get("quiz_grade")
+                board = st.session_state.get("quiz_board")
+                topic = st.session_state.get("quiz_topic")
+                
+                # Debug: Check if values are set
+                if not grade or not board or not topic:
+                    st.error(f"⚠️ Quiz configuration missing. Grade: {grade}, Board: {board}, Topic: {topic}. Please restart the quiz.")
+                else:
+                    # Verify the error report
+                    with st.spinner("Verifying error report..."):
+                        try:
+                            is_valid = verify_error_report(
+                                question=question,
+                                error_type=error_type,
+                                grade=grade,
+                                board=board,
+                                topic=topic
+                            )
+                            
+                            if is_valid:
+                                # Error verified - apologize, remove from scoring, delete from DB
+                                st.error("⚠️ We apologize for the error in this question. The question has been removed from your quiz and will not count towards your score.")
+                                
+                                # Mark question as reported
+                                st.session_state.reported_questions.add(current_q_idx)
+                                
+                                # Delete question from database
+                                delete_question(
+                                    grade=grade,
+                                    board=board,
+                                    topic=topic,
+                                    question_text=question['question']
+                                )
+                                
+                                # Reset error report state
+                                st.session_state.error_report_active = False
+                                st.session_state.error_type_selected = None
+                                
+                                st.rerun()
+                            else:
+                                st.warning("After review, we found that the question is correct. Please try again or continue with the quiz.")
+                        except Exception as e:
+                            st.error(f"Error verifying report: {str(e)}. Please try again.")
+                            
+        with col2:
+            if st.button("Cancel", use_container_width=True, key=f"cancel_error_{current_q_idx}"):
+                st.session_state.error_report_active = False
+                st.session_state.error_type_selected = None
+                st.rerun()
+
 def initialize_session_state():
     """Initialize session state variables."""
     if "questions" not in st.session_state:
@@ -336,6 +489,18 @@ def initialize_session_state():
         st.session_state.coaching_messages = []
     if "coaching_complete" not in st.session_state:
         st.session_state.coaching_complete = False
+    if "reported_questions" not in st.session_state:
+        st.session_state.reported_questions = set()  # Track question indices that were reported and verified
+    if "error_report_active" not in st.session_state:
+        st.session_state.error_report_active = False
+    if "error_type_selected" not in st.session_state:
+        st.session_state.error_type_selected = None
+    if "quiz_grade" not in st.session_state:
+        st.session_state.quiz_grade = None
+    if "quiz_board" not in st.session_state:
+        st.session_state.quiz_board = None
+    if "quiz_topic" not in st.session_state:
+        st.session_state.quiz_topic = None
 
 def reset_quiz():
     """Reset quiz state."""
@@ -349,6 +514,12 @@ def reset_quiz():
     st.session_state.coaching_active = False
     st.session_state.coaching_messages = []
     st.session_state.coaching_complete = False
+    st.session_state.reported_questions = set()
+    st.session_state.error_report_active = False
+    st.session_state.error_type_selected = None
+    st.session_state.quiz_grade = None
+    st.session_state.quiz_board = None
+    st.session_state.quiz_topic = None
     # Note: user_name is preserved on reset
 
 def main():
@@ -458,6 +629,10 @@ def main():
                         st.session_state.score = 0
                         st.session_state.show_feedback = False
                         st.session_state.quiz_completed = False
+                        # Store quiz configuration for error reporting
+                        st.session_state.quiz_grade = grade
+                        st.session_state.quiz_board = board
+                        st.session_state.quiz_topic = topic
                         
                         # Save quiz to user history
                         save_user_quiz(user_name, grade, board, topic, questions)
@@ -489,33 +664,53 @@ def main():
         # Show final results
         st.header("🎉 Quiz Completed!")
         
+        # Calculate total possible score excluding reported questions
         total_possible = sum(
             SCORING.get(q.get("difficulty", "Easy"), 1) 
-            for q in st.session_state.questions
+            for i, q in enumerate(st.session_state.questions)
+            if i not in st.session_state.reported_questions
         )
         
         st.metric("Your Score", f"{st.session_state.score} / {total_possible}")
         
+        if st.session_state.reported_questions:
+            st.info(f"ℹ️ {len(st.session_state.reported_questions)} question(s) were reported and removed from scoring.")
+        
         # Detailed breakdown
         st.subheader("Question Review")
         for i, (question, user_answer) in enumerate(zip(st.session_state.questions, st.session_state.user_answers)):
+            is_reported = i in st.session_state.reported_questions
             correct_answer_idx = question["correct_answer"]
-            is_correct = user_answer == correct_answer_idx
+            # Handle case where user_answer is -1 (reported before answering)
+            if user_answer == -1:
+                is_correct = False
+                user_answered = False
+            else:
+                is_correct = user_answer == correct_answer_idx
+                user_answered = True
             difficulty = question.get("difficulty", "Easy")
-            points = SCORING.get(difficulty, 1) if is_correct else 0
             
-            with st.expander(f"Question {i+1} ({difficulty}) - {'✓ Correct' if is_correct else '✗ Incorrect'} - {points} point(s)"):
+            if is_reported:
+                points = 0
+                status_text = "🚨 Reported & Removed"
+            else:
+                points = SCORING.get(difficulty, 1) if is_correct else 0
+                status_text = f"{'✓ Correct' if is_correct else '✗ Incorrect'} - {points} point(s)"
+            
+            with st.expander(f"Question {i+1} ({difficulty}) - {status_text}"):
+                if is_reported:
+                    st.warning("⚠️ This question was reported and removed from scoring.")
                 st.markdown(f"**{question['question']}**")
                 st.markdown("**Options:**")
                 for idx, option in enumerate(question["options"]):
                     marker = ""
                     if idx == correct_answer_idx:
                         marker = " ✓ Correct Answer"
-                    if idx == user_answer and not is_correct:
+                    if user_answered and idx == user_answer and not is_correct and not is_reported:
                         marker = " ✗ Your Answer (Incorrect)"
                     st.markdown(f"{chr(65+idx)}. {option}{marker}")
                 
-                if not is_correct:
+                if not is_correct and not is_reported:
                     st.info(f"Correct answer: {chr(65+correct_answer_idx)}. {question['options'][correct_answer_idx]}")
         
         if st.button("Take Another Quiz"):
@@ -539,39 +734,96 @@ def main():
             st.markdown(f"**{question['question']}**")
             st.markdown(f"*Difficulty: {difficulty}*")
             
+            # Show error reporting option before user answers
+            current_q_idx = st.session_state.current_question_index
+            question_reported = current_q_idx in st.session_state.reported_questions
+            
             if not st.session_state.show_feedback:
-                # Display options as buttons
-                selected_answer = None
+                # Show error reporting UI before answering
+                if not question_reported:
+                    render_error_reporting_ui(question, current_q_idx)
                 
-                col1, col2 = st.columns(2)
-                with col1:
-                    if st.button(f"A. {question['options'][0]}", key="option_0", use_container_width=True):
-                        selected_answer = 0
-                    if st.button(f"B. {question['options'][1]}", key="option_1", use_container_width=True):
-                        selected_answer = 1
-                with col2:
-                    if st.button(f"C. {question['options'][2]}", key="option_2", use_container_width=True):
-                        selected_answer = 2
-                    if st.button(f"D. {question['options'][3]}", key="option_3", use_container_width=True):
-                        selected_answer = 3
-                
-                if selected_answer is not None:
-                    st.session_state.user_answers.append(selected_answer)
-                    st.session_state.show_feedback = True
-                    # Reset coaching state for new answer
-                    st.session_state.coaching_active = False
-                    st.session_state.coaching_messages = []
-                    st.session_state.coaching_complete = False
-                    st.rerun()
+                # If question was reported before answering, allow skipping
+                if question_reported:
+                    st.warning("⚠️ This question has been reported and removed from scoring.")
+                    st.divider()
+                    if st.session_state.current_question_index < len(st.session_state.questions) - 1:
+                        if st.button("Next Question", type="primary", key="next_reported"):
+                            st.session_state.current_question_index += 1
+                            st.session_state.show_feedback = False
+                            st.session_state.coaching_active = False
+                            st.session_state.coaching_messages = []
+                            st.session_state.coaching_complete = False
+                            st.session_state.error_report_active = False
+                            st.session_state.error_type_selected = None
+                            # Add a placeholder answer (won't count towards score)
+                            if len(st.session_state.user_answers) <= current_q_idx:
+                                st.session_state.user_answers.append(-1)  # -1 indicates skipped/reported
+                            st.rerun()
+                    else:
+                        if st.button("View Results", type="primary", key="results_reported"):
+                            st.session_state.quiz_completed = True
+                            st.session_state.coaching_active = False
+                            st.session_state.coaching_messages = []
+                            st.session_state.coaching_complete = False
+                            st.session_state.error_report_active = False
+                            st.session_state.error_type_selected = None
+                            # Add a placeholder answer if not already added
+                            if len(st.session_state.user_answers) <= current_q_idx:
+                                st.session_state.user_answers.append(-1)  # -1 indicates skipped/reported
+                            st.rerun()
+                else:
+                    # Display options as buttons
+                    selected_answer = None
+                    
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if st.button(f"A. {question['options'][0]}", key="option_0", use_container_width=True):
+                            selected_answer = 0
+                        if st.button(f"B. {question['options'][1]}", key="option_1", use_container_width=True):
+                            selected_answer = 1
+                    with col2:
+                        if st.button(f"C. {question['options'][2]}", key="option_2", use_container_width=True):
+                            selected_answer = 2
+                        if st.button(f"D. {question['options'][3]}", key="option_3", use_container_width=True):
+                            selected_answer = 3
+                    
+                    if selected_answer is not None:
+                        st.session_state.user_answers.append(selected_answer)
+                        st.session_state.show_feedback = True
+                        # Reset coaching state for new answer
+                        st.session_state.coaching_active = False
+                        st.session_state.coaching_messages = []
+                        st.session_state.coaching_complete = False
+                        st.rerun()
             else:
                 # Show feedback
-                user_answer = st.session_state.user_answers[-1]
-                correct_answer_idx = question["correct_answer"]
-                is_correct = user_answer == correct_answer_idx
+                # Make sure we have an answer for this question
+                if len(st.session_state.user_answers) > current_q_idx:
+                    user_answer = st.session_state.user_answers[current_q_idx]
+                else:
+                    # This shouldn't happen, but handle it gracefully
+                    user_answer = -1
                 
-                if is_correct:
+                correct_answer_idx = question["correct_answer"]
+                # Handle case where user_answer is -1 (reported before answering)
+                if user_answer == -1:
+                    is_correct = False
+                else:
+                    is_correct = user_answer == correct_answer_idx
+                
+                # Check if question was already reported (current_q_idx already defined above)
+                question_reported = current_q_idx in st.session_state.reported_questions
+                
+                # Initialize points
+                points = 0
+                
+                if question_reported:
+                    st.warning("⚠️ This question was reported and removed from scoring.")
+                    st.session_state.coaching_complete = True
+                elif is_correct:
                     st.success(f"✓ Correct! You selected {chr(65+user_answer)}. {question['options'][user_answer]}")
-                    # Calculate points
+                    # Calculate points (will be added when moving to next question if not reported)
                     points = SCORING.get(difficulty, 1)
                     st.session_state.coaching_complete = True
                     st.balloons()
@@ -728,10 +980,19 @@ def main():
                             marker = " ✗ Your Answer (Incorrect)"
                         st.markdown(f"{chr(65+idx)}. {option}{marker}")
                     
+                # Error reporting section (also available after feedback)
+                if st.session_state.coaching_complete and not question_reported:
+                    render_error_reporting_ui(question, current_q_idx)
+                
                 # Next button (only show if coaching is complete or skipped)
                 # Show next button only when coaching_complete is True (either through coaching or skip)
                 if st.session_state.coaching_complete:
                     st.divider()
+                    
+                    # Recalculate points in case question was reported after answering
+                    if current_q_idx in st.session_state.reported_questions:
+                        points = 0  # Don't count reported questions
+                    # Otherwise, points already calculated above
                         
                     if st.session_state.current_question_index < len(st.session_state.questions) - 1:
                         if st.button("Next Question", type="primary", key="next_after_coaching"):
@@ -740,7 +1001,11 @@ def main():
                             st.session_state.coaching_active = False
                             st.session_state.coaching_messages = []
                             st.session_state.coaching_complete = False
-                            st.session_state.score += points
+                            st.session_state.error_report_active = False
+                            st.session_state.error_type_selected = None
+                            # Only add points if question was not reported
+                            if current_q_idx not in st.session_state.reported_questions:
+                                st.session_state.score += points
                             st.rerun()
                     else:
                         if st.button("View Results", type="primary", key="results_after_coaching"):
@@ -748,7 +1013,11 @@ def main():
                             st.session_state.coaching_active = False
                             st.session_state.coaching_messages = []
                             st.session_state.coaching_complete = False
-                            st.session_state.score += points
+                            st.session_state.error_report_active = False
+                            st.session_state.error_type_selected = None
+                            # Only add points if question was not reported
+                            if current_q_idx not in st.session_state.reported_questions:
+                                st.session_state.score += points
                             st.rerun()
 
 if __name__ == "__main__":
