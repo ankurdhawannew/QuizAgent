@@ -1,7 +1,7 @@
 # Python version requirement: 3.11.0
 # Note: Python must be installed separately, not via pip
 
-streamlit>=1.28.0
+streamlit>=1.29.0
 google-generativeai>=0.3.0
 python-dotenv>=1.0.0
 langsmith>=0.0.60

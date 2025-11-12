@@ -164,7 +164,7 @@ The difficulty should be one of: "Easy", "Medium", or "Hard".
 Generate exactly {num_questions} questions with the specified difficulty distribution."""
 
     try:
-        model = genai.GenerativeModel('gemini-2.5-flash')
+        model = genai.GenerativeModel('gemini-2.5-pro')
         
         response = model.generate_content(prompt)
         
@@ -498,65 +498,96 @@ def main():
                                 st.session_state.coaching_messages = []
                                 st.rerun()
                     
-                    # Show coaching conversation
+                    # Show coaching conversation in a popup/modal using st.dialog
                     if st.session_state.coaching_active:
-                        st.divider()
-                        st.subheader("🎓 Coaching Session")
-                        
-                        # Display coaching messages
-                        for msg in st.session_state.coaching_messages:
-                            if msg["role"] == "coach":
-                                with st.chat_message("assistant"):
-                                    st.markdown(msg["content"])
-                            elif msg["role"] == "student":
-                                with st.chat_message("user"):
-                                    st.markdown(msg["content"])
-                        
-                        # If coaching is complete, show the answer
-                        if st.session_state.coaching_complete:
-                            st.success(f"✅ Correct answer: {chr(65+correct_answer_idx)}. {question['options'][correct_answer_idx]}")
-                        else:
-                            # Student response input
-                            student_response = st.chat_input("Type your response or question here...")
+                        # Use variables from outer scope - they're available here
+                        # Define the dialog function with closure over the question variables
+                        @st.dialog("🎓 Coaching Session")
+                        def coaching_dialog():
+                            # Use variables from outer scope (question, user_answer, correct_answer_idx)
+                            # These are captured in the closure
+                            coaching_question = question['question']
+                            coaching_options = question['options']
+                            coaching_user_answer = user_answer
+                            coaching_correct_answer = correct_answer_idx
                             
-                            if student_response:
-                                # Add student message
-                                st.session_state.coaching_messages.append({
-                                    "role": "student",
-                                    "content": student_response
-                                })
+                            # Modal header
+                            st.markdown("### 🎓 Coaching Session")
+                            
+                            st.divider()
+                            
+                            # Question context
+                            st.markdown(f"**Question:** {coaching_question}")
+                            st.caption("💬 Chat with your AI tutor to understand the concept better!")
+                            st.divider()
+                            
+                            # Display coaching messages
+                            if st.session_state.coaching_messages:
+                                for msg in st.session_state.coaching_messages:
+                                    if msg["role"] == "coach":
+                                        with st.chat_message("assistant"):
+                                            st.markdown(msg["content"])
+                                    elif msg["role"] == "student":
+                                        with st.chat_message("user"):
+                                            st.markdown(msg["content"])
+                            else:
+                                st.info("Starting coaching session...")
+                            
+                            # If coaching is complete, show the answer
+                            if st.session_state.coaching_complete:
+                                st.divider()
+                                st.success(f"✅ **Correct answer:** {chr(65+coaching_correct_answer)}. {coaching_options[coaching_correct_answer]}")
+                                if st.button("Close Coaching", type="primary", use_container_width=True, key="close_complete"):
+                                    st.session_state.coaching_active = False
+                                    st.rerun()
+                            else:
+                                st.divider()
+                                # Student response input
+                                student_response = st.chat_input("Type your response or question here...", key="coaching_chat_input")
                                 
-                                # Get coaching response
-                                with st.spinner("Coach is thinking..."):
-                                    coaching_response = get_coaching_response(
-                                        question=question['question'],
-                                        options=question['options'],
-                                        user_answer=user_answer,
-                                        correct_answer=correct_answer_idx,
-                                        student_response=student_response,
-                                        conversation_history=st.session_state.coaching_messages
-                                    )
+                                if student_response:
+                                    # Add student message
+                                    st.session_state.coaching_messages.append({
+                                        "role": "student",
+                                        "content": student_response
+                                    })
                                     
-                                    if coaching_response:
-                                        st.session_state.coaching_messages.append({
-                                            "role": "coach",
-                                            "content": coaching_response
-                                        })
+                                    # Get coaching response
+                                    with st.spinner("Coach is thinking..."):
+                                        coaching_response = get_coaching_response(
+                                            question=coaching_question,
+                                            options=coaching_options,
+                                            user_answer=coaching_user_answer,
+                                            correct_answer=coaching_correct_answer,
+                                            student_response=student_response,
+                                            conversation_history=st.session_state.coaching_messages
+                                        )
                                         
-                                        # Check if answer was revealed
-                                        if "correct answer" in coaching_response.lower() or "answer is" in coaching_response.lower():
-                                            st.session_state.coaching_complete = True
+                                        if coaching_response:
+                                            st.session_state.coaching_messages.append({
+                                                "role": "coach",
+                                                "content": coaching_response
+                                            })
+                                            
+                                            # Check if answer was revealed
+                                            if "correct answer" in coaching_response.lower() or "answer is" in coaching_response.lower():
+                                                st.session_state.coaching_complete = True
+                                    
+                                    st.rerun()
                                 
-                                st.rerun()
-                            
-                            # Option to skip to answer
-                            if st.button("Show Answer", key="show_answer"):
-                                st.session_state.coaching_complete = True
-                                st.rerun()
+                                # Options at the bottom
+                                col1, col2 = st.columns([1, 1])
+                                with col1:
+                                    if st.button("Show Answer", key="show_answer", use_container_width=True):
+                                        st.session_state.coaching_complete = True
+                                        st.rerun()
+                                with col2:
+                                    if st.button("Close Coaching", key="close_coaching", use_container_width=True):
+                                        st.session_state.coaching_active = False
+                                        st.rerun()
                         
-                        # Show answer if coaching is complete
-                        #if st.session_state.coaching_complete:
-                        #    st.success(f"✅ Correct answer: {chr(65+correct_answer_idx)}. {question['options'][correct_answer_idx]}")
+                        # Call the dialog function
+                        coaching_dialog()
                     
                     # Show correct answer if coaching was skipped (coaching_complete but not active)
                 if st.session_state.coaching_complete and not st.session_state.coaching_active:

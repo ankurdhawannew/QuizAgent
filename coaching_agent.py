@@ -56,7 +56,7 @@ def create_coaching_agent():
         raise ValueError("GOOGLE_API_KEY not found in environment variables")
     
     llm = ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash",
+        model="gemini-2.5-pro",
         temperature=0.7,
         google_api_key=GOOGLE_API_KEY
     )
@@ -375,6 +375,16 @@ Socratic Method Principles:
 Be encouraging, patient, and supportive. Make the student feel safe to think and explore.
 Keep your responses concise (2-3 sentences)."""
         
+        # Validate inputs
+        if not options or len(options) < 4:
+            return "Error: Invalid question options. Please try again."
+        
+        if user_answer < 0 or user_answer >= len(options):
+            return "Error: Invalid user answer index. Please try again."
+        
+        if correct_answer < 0 or correct_answer >= len(options):
+            return "Error: Invalid correct answer index. Please try again."
+        
         # Build conversation context
         context = f"""Question: {question}
 
@@ -388,11 +398,14 @@ Student's wrong answer: {chr(65 + user_answer)}. {options[user_answer]}
 Correct answer: {chr(65 + correct_answer)}. {options[correct_answer]}"""
         
         # Add conversation history if available
-        if conversation_history:
+        if conversation_history and len(conversation_history) > 0:
             context += "\n\nPrevious conversation:\n"
-            for msg in conversation_history[-4:]:  # Last 4 messages for context
-                role = "Student" if msg.get("role") == "student" else "Coach"
-                context += f"{role}: {msg.get('content', '')}\n"
+            # Safely get last 4 messages
+            recent_messages = conversation_history[-4:] if len(conversation_history) >= 4 else conversation_history
+            for msg in recent_messages:
+                if isinstance(msg, dict):
+                    role = "Student" if msg.get("role") == "student" else "Coach"
+                    context += f"{role}: {msg.get('content', '')}\n"
         
         if student_response:
             prompt = f"""{context}
