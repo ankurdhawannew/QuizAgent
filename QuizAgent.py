@@ -6,6 +6,13 @@ from dotenv import load_dotenv
 from typing import List, Dict, Optional
 from datetime import datetime
 from coaching_agent import get_coaching_response, start_coaching_session
+from question_database import (
+    initialize_database,
+    get_questions_by_difficulty_distribution,
+    get_partial_questions_and_missing_counts,
+    save_questions,
+    count_questions
+)
 
 # Load environment variables
 load_dotenv()
@@ -93,7 +100,8 @@ def generate_questions(
     previous_questions: Optional[List[str]] = None
 ) -> List[Dict]:
     """
-    Generate quiz questions using a LLM.
+    Generate or retrieve quiz questions. First checks database for existing questions.
+    Filters out questions the user has already seen, then generates new ones if needed.
     
     Args:
         grade: Grade level (6-12)
@@ -102,19 +110,100 @@ def generate_questions(
         num_questions: Total number of questions
         difficulty_distribution: Dictionary with Easy, Medium, Hard percentages
         user_name: Optional user name for tracking
-        previous_questions: Optional list of previous question texts to avoid
+        previous_questions: Optional list of previous question texts the user has already seen
         
     Returns:
         List of question dictionaries
     """
-    if not GOOGLE_API_KEY:
-        st.error("GOOGLE_API_KEY not found in environment variables. Please set it in your .env file.")
-        return []
+    # Convert previous_questions to a set for faster lookup
+    previous_questions_set = set()
+    if previous_questions:
+        previous_questions_set = set(q.lower().strip() for q in previous_questions)
     
-    # Calculate number of questions per difficulty level
+    # Helper function to filter out questions user has already seen
+    def filter_user_questions(questions_list: List[Dict]) -> List[Dict]:
+        """Filter out questions the user has already seen."""
+        if not previous_questions_set:
+            return questions_list
+        return [
+            q for q in questions_list 
+            if q.get("question", "").lower().strip() not in previous_questions_set
+        ]
+    
+    # First, try to get questions from database
+    # Get more questions than needed to account for filtering out user's previous questions
+    # If user has seen questions, we might need 2x to ensure we have enough after filtering
+    multiplier = 2 if previous_questions_set else 1
+    existing_questions = get_questions_by_difficulty_distribution(
+        grade=grade,
+        board=board,
+        topic=topic,
+        difficulty_distribution=difficulty_distribution,
+        num_questions=num_questions * multiplier
+    )
+    
+    # Filter out questions user has already seen
+    existing_questions = filter_user_questions(existing_questions)
+    
+    if existing_questions and len(existing_questions) >= num_questions:
+        # We have sufficient NEW questions in database, return them
+        return existing_questions[:num_questions]
+    
+    # Get partial questions and see what's missing
+    # Get more questions to account for filtering
+    partial_questions, missing_counts = get_partial_questions_and_missing_counts(
+        grade=grade,
+        board=board,
+        topic=topic,
+        difficulty_distribution=difficulty_distribution,
+        num_questions=num_questions * multiplier
+    )
+    
+    # Filter out questions user has already seen from partial questions
+    partial_questions = filter_user_questions(partial_questions)
+    
+    # Recalculate missing counts based on filtered questions
+    # Count questions by difficulty after filtering
+    filtered_by_difficulty = {"Easy": 0, "Medium": 0, "Hard": 0}
+    for q in partial_questions:
+        diff = q.get("difficulty", "Easy")
+        if diff in filtered_by_difficulty:
+            filtered_by_difficulty[diff] += 1
+    
+    # Calculate what we actually need
     easy_count = int(num_questions * difficulty_distribution["Easy"] / 100)
     medium_count = int(num_questions * difficulty_distribution["Medium"] / 100)
-    hard_count = num_questions - easy_count - medium_count  # Ensure total matches
+    hard_count = num_questions - easy_count - medium_count
+    
+    # Recalculate missing counts
+    missing_counts = {
+        "Easy": max(0, easy_count - filtered_by_difficulty["Easy"]),
+        "Medium": max(0, medium_count - filtered_by_difficulty["Medium"]),
+        "Hard": max(0, hard_count - filtered_by_difficulty["Hard"])
+    }
+    
+    # Calculate total missing questions
+    total_missing = sum(missing_counts.values())
+    
+    if total_missing == 0 and len(partial_questions) >= num_questions:
+        # We have all questions from database (after filtering)
+        return partial_questions[:num_questions]
+    
+    # Need to generate missing questions
+    if not GOOGLE_API_KEY:
+        st.error("GOOGLE_API_KEY not found in environment variables. Please set it in your .env file.")
+        return partial_questions if partial_questions else []
+    
+    # Calculate number of questions per difficulty level for generation
+    # We'll generate only the missing ones
+    easy_count = missing_counts["Easy"]
+    medium_count = missing_counts["Medium"]
+    hard_count = missing_counts["Hard"]
+    total_to_generate = easy_count + medium_count + hard_count
+    
+    # Safety check: if somehow total_to_generate is 0, return partial questions
+    if total_to_generate == 0:
+        return partial_questions[:num_questions]
     
     # Create prompt for question generation
     uniqueness_note = ""
@@ -128,7 +217,7 @@ Do NOT repeat or rephrase any of these previously asked questions:
 
 Generate fresh, unique questions that the user has not seen before."""
 
-    prompt = f"""Generate {num_questions} multiple-choice math questions for Grade {grade} students following the {board} curriculum.
+    prompt = f"""Generate {total_to_generate} multiple-choice math questions for Grade {grade} students following the {board} curriculum.
 
 Topic: {topic}
 Difficulty Distribution:
@@ -161,7 +250,7 @@ Do not add A, B, C, D to the options.
 The correct_answer should be the index (0-3) of the correct option.
 The difficulty should be one of: "Easy", "Medium", or "Hard".
 
-Generate exactly {num_questions} questions with the specified difficulty distribution."""
+Generate exactly {total_to_generate} questions with the specified difficulty distribution."""
 
     try:
         model = genai.GenerativeModel('gemini-2.5-pro')
@@ -191,7 +280,28 @@ Generate exactly {num_questions} questions with the specified difficulty distrib
                 q["correct_answer"] = ord(q["correct_answer"].upper()) - ord("A")
             q["correct_answer"] = int(q["correct_answer"])
         
-        return questions[:num_questions]
+        generated_questions = questions[:total_to_generate]
+        
+        # Save generated questions to database for future reuse
+        if generated_questions:
+            saved_count, skipped_count = save_questions(
+                questions=generated_questions,
+                grade=grade,
+                board=board,
+                topic=topic
+            )
+            if saved_count > 0:
+                st.info(f"💾 Saved {saved_count} new question(s) to database for future reuse")
+        
+        # Combine existing questions with newly generated ones
+        # Sort by difficulty to maintain distribution order
+        all_questions = partial_questions + generated_questions
+        
+        # Reorder to match difficulty distribution: Easy, Medium, Hard
+        difficulty_order = {"Easy": 0, "Medium": 1, "Hard": 2}
+        all_questions.sort(key=lambda x: difficulty_order.get(x.get("difficulty", "Easy"), 0))
+        
+        return all_questions[:num_questions]
         
     except json.JSONDecodeError as e:
         st.error(f"Error parsing JSON response: {e}")
@@ -246,6 +356,9 @@ def main():
     
     st.title("📚 Math Quiz Agent")
     st.markdown("Generate and take personalized math quizzes based on your grade, board, and topic!")
+    
+    # Initialize database on startup
+    initialize_database()
     
     initialize_session_state()
     
@@ -310,11 +423,14 @@ def main():
             elif not topic:
                 st.error("Please enter a math topic")
             else:
-                # Get previous questions for this user
+                # Get previous questions for this user to avoid showing them again
                 previous_questions = get_user_previous_questions(user_name, grade, board, topic)
                 
+                # Check database for existing questions
+                total_available = count_questions(grade, board, topic)
+                
                 if previous_questions:
-                    st.info(f"📝 You've taken {len([q for q in load_user_history().get(user_name, {}).get('quizzes', []) if q.get('grade') == grade and q.get('board') == board and q.get('topic', '').lower() == topic.lower()])} quiz(zes) on this topic. Generating new questions...")
+                    st.info(f"📝 You've taken {len([q for q in load_user_history().get(user_name, {}).get('quizzes', []) if q.get('grade') == grade and q.get('board') == board and q.get('topic', '').lower() == topic.lower()])} quiz(zes) on this topic. Will show you new questions!")
                 
                 with st.spinner("Generating questions..."):
                     questions = generate_questions(
@@ -326,6 +442,13 @@ def main():
                         user_name=user_name,
                         previous_questions=previous_questions
                     )
+                    
+                    if total_available > 0:
+                        if len(questions) == num_questions:
+                            # Check if we reused questions from database
+                            st.info(f"📚 Found {total_available} question(s) in database. Reusing existing questions!")
+                        else:
+                            st.info(f"📚 Found {total_available} question(s) in database. Generating additional questions to meet requirements.")
                     
                     if questions:
                         st.session_state.questions = questions

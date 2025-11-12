@@ -43,3 +43,7 @@ Thumbs.db
 # User quiz history
 user_quiz_history.json
 
+# Database
+quiz_questions.db
+*.db
+
