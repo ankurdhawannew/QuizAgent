@@ -219,7 +219,8 @@ def get_questions_by_difficulty_distribution(
 ) -> List[Dict]:
     """
     Get questions matching the difficulty distribution requirements.
-    Returns existing questions if sufficient, otherwise returns empty list.
+    Returns all available questions even if some difficulty levels have insufficient questions.
+    This allows generate_questions to generate only the pending questions.
     
     Args:
         grade: Grade level (6-12)
@@ -229,7 +230,7 @@ def get_questions_by_difficulty_distribution(
         num_questions: Total number of questions needed
         
     Returns:
-        List of question dictionaries, or empty list if insufficient questions exist
+        List of question dictionaries with all available questions
     """
     # Calculate number of questions per difficulty level
     easy_count = int(num_questions * difficulty_distribution["Easy"] / 100)
@@ -243,21 +244,22 @@ def get_questions_by_difficulty_distribution(
         if count > 0:
             available = count_questions(grade, board, topic, difficulty)
             
-            if available < count:
-                # Not enough questions available
-                return []
+            # Get all available questions (up to the required count)
+            # If we have less than required, return what we have
+            questions_to_get = min(available, count)
             
-            # Get questions randomly if we have more than needed
-            questions = get_questions(
-                grade=grade,
-                board=board,
-                topic=topic,
-                difficulty=difficulty,
-                limit=count,
-                random=True
-            )
-            
-            all_questions.extend(questions)
+            if questions_to_get > 0:
+                # Get questions randomly if we have more than needed
+                questions = get_questions(
+                    grade=grade,
+                    board=board,
+                    topic=topic,
+                    difficulty=difficulty,
+                    limit=questions_to_get,
+                    random=True
+                )
+                
+                all_questions.extend(questions)
     
     return all_questions
 

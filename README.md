@@ -7,8 +7,10 @@ An intelligent, AI-powered math quiz application built with Streamlit that gener
 ### 🎯 Quiz Generation
 - **Personalized Quizzes**: Generate math quizzes tailored to grade level (6-12), education board (CBSE, ICSE, IB), and specific topics
 - **Difficulty Distribution**: Customize the mix of Easy, Medium, and Hard questions
+- **Question Database**: SQLite database stores questions for reuse, reducing API calls and improving performance
 - **Question Tracking**: Automatically tracks previously asked questions to ensure variety
 - **Adaptive Scoring**: Points system based on difficulty (Easy: 1pt, Medium: 2pts, Hard: 4pts)
+- **Error Reporting**: Users can report invalid questions, which are verified and marked as invalid
 
 ### 🎓 Intelligent Coaching
 - **Socratic Method**: When students answer incorrectly, they can opt for personalized coaching
@@ -20,6 +22,12 @@ An intelligent, AI-powered math quiz application built with Streamlit that gener
 - **User History**: Tracks quiz history per user, grade, board, and topic
 - **Detailed Results**: Comprehensive review of all questions with correct/incorrect answers
 - **Score Breakdown**: See points earned per question based on difficulty level
+
+### 🗄️ Database Features
+- **Question Storage**: Questions are stored in SQLite database for efficient retrieval
+- **Smart Caching**: Reuses existing questions from database before generating new ones
+- **Partial Question Handling**: Returns available questions even if full distribution isn't met, then generates only missing questions
+- **Question Validation**: Invalid questions are marked (not deleted) for quality tracking
 
 ## 🚀 Getting Started
 
@@ -105,10 +113,14 @@ When you answer incorrectly and choose coaching:
 ```
 QuizAgent/
 ├── QuizAgent.py              # Main Streamlit application
-├── coaching_agent.py         # Socratic method coaching agent using LangGraph
+├── coaching_agent.py         # Socratic method coaching agent
+├── question_database.py      # SQLite database operations for question storage
+├── test_e2e.py              # End-to-end test suite
+├── run_tests.py             # Test runner script
 ├── requirements.txt          # Python dependencies
 ├── .env                      # Environment variables (create this)
-├── user_quiz_history.json    # User quiz history storage (auto-generated)
+├── quiz_questions.db        # SQLite database (auto-generated)
+├── user_quiz_history.json   # User quiz history storage (auto-generated)
 └── README.md                 # This file
 ```
 
@@ -116,8 +128,8 @@ QuizAgent/
 
 - **Streamlit**: Web application framework
 - **Google Gemini AI**: Question generation and coaching (via `google-generativeai` and `langchain-google-genai`)
-- **LangGraph**: State management for coaching agent workflow
-- **LangChain**: LLM orchestration and conversation management
+- **LangChain**: LLM orchestration and conversation management for coaching
+- **SQLite**: Local database for question storage and retrieval
 - **Python-dotenv**: Environment variable management
 
 ## 📋 Key Components
@@ -128,12 +140,20 @@ QuizAgent/
 - User history tracking
 - Quiz taking interface
 - Score calculation and results display
+- Error reporting and validation
 
 ### coaching_agent.py
 - Socratic method coaching implementation
-- LangGraph-based state machine for coaching workflow
 - Interactive chat interface for student-tutor conversation
 - Adaptive coaching responses based on student understanding
+- Uses Gemini AI for personalized guidance
+
+### question_database.py
+- SQLite database operations
+- Question storage and retrieval by grade, board, topic, and difficulty
+- Partial question handling for efficient quiz generation
+- Question validation and invalidation tracking
+- Database initialization and management
 
 ## 🔧 Configuration
 
@@ -150,10 +170,23 @@ The application requires the following environment variable:
   - Quiz metadata (grade, board, topic, timestamp)
   - Previously asked questions (to avoid duplicates)
 
+- `quiz_questions.db`: SQLite database automatically created to store quiz questions. Contains:
+  - Questions organized by grade, board, topic, and difficulty
+  - Question options and correct answers
+  - Validation status (valid/invalid)
+  - Timestamps for tracking
+
 ## 🎯 Features in Detail
 
 ### Question Uniqueness
 The system tracks all previously asked questions for each user, grade, board, and topic combination. When generating new quizzes, it ensures questions are unique and different from previous ones.
+
+### Database-Driven Question Management
+- Questions are stored in SQLite database for efficient retrieval
+- When generating a quiz, the system first checks the database for existing questions
+- If sufficient questions exist, they are reused (reducing API calls)
+- If insufficient questions exist, only the missing questions are generated
+- This approach improves performance and reduces API costs
 
 ### Scoring System
 - **Easy questions**: 1 point
@@ -180,8 +213,13 @@ The coaching agent uses the Socratic method:
 ### Import Errors
 If you encounter LangChain import errors:
 ```bash
-pip install --upgrade langchain langchain-core langgraph langchain-google-genai
+pip install --upgrade langchain langchain-core langchain-google-genai
 ```
+
+### Database Issues
+- The database file (`quiz_questions.db`) is automatically created on first run
+- If you encounter database errors, you can safely delete `quiz_questions.db` to recreate it
+- Database schema is automatically initialized when the application starts
 
 ### Question Generation Fails
 - Check your internet connection
@@ -190,9 +228,12 @@ pip install --upgrade langchain langchain-core langgraph langchain-google-genai
 
 ## 📝 Notes
 
-- The application uses `gemini-2.5-flash` model for both question generation and coaching
+- The application uses `gemini-2.5-pro` model for question generation and error verification
+- The application uses `gemini-2.5-flash` model for coaching (faster responses)
 - Quiz history is stored locally in JSON format
+- Questions are stored in SQLite database for efficient reuse
 - The coaching feature requires an active internet connection for AI responses
+- Questions are cached in the database to reduce API calls and improve performance
 
 ## 🤝 Contributing
 

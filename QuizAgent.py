@@ -8,7 +8,6 @@ from datetime import datetime
 from coaching_agent import get_coaching_response, start_coaching_session
 from question_database import (
     initialize_database,
-    get_questions_by_difficulty_distribution,
     get_partial_questions_and_missing_counts,
     save_questions,
     count_questions,
@@ -133,27 +132,10 @@ def generate_questions(
             if q.get("question", "").lower().strip() not in previous_questions_set
         ]
     
-    # First, try to get questions from database
+    # Get partial questions and see what's missing
     # Get more questions than needed to account for filtering out user's previous questions
     # If user has seen questions, we might need 2x to ensure we have enough after filtering
     multiplier = 2 if previous_questions_set else 1
-    existing_questions = get_questions_by_difficulty_distribution(
-        grade=grade,
-        board=board,
-        topic=topic,
-        difficulty_distribution=difficulty_distribution,
-        num_questions=num_questions * multiplier
-    )
-    
-    # Filter out questions user has already seen
-    existing_questions = filter_user_questions(existing_questions)
-    
-    if existing_questions and len(existing_questions) >= num_questions:
-        # We have sufficient NEW questions in database, return them
-        return existing_questions[:num_questions]
-    
-    # Get partial questions and see what's missing
-    # Get more questions to account for filtering
     partial_questions, missing_counts = get_partial_questions_and_missing_counts(
         grade=grade,
         board=board,
@@ -206,8 +188,10 @@ def generate_questions(
     
     # Safety check: if somehow total_to_generate is 0, return partial questions
     if total_to_generate == 0:
+        st.info(f"📚 Sufficient questions found in database. Reusing existing questions!")
         return partial_questions[:num_questions]
     
+    st.info(f"📚 Sufficient question(s) not found in database. Generating additional {total_to_generate} questions to meet requirements.")
     # Create prompt for question generation
     uniqueness_note = ""
     if previous_questions and len(previous_questions) > 0:
@@ -371,8 +355,8 @@ Respond with ONLY "YES" if the error report is valid and correct, or "NO" if the
         model = genai.GenerativeModel('gemini-2.5-pro')
         response = model.generate_content(prompt)
         response_text = response.text.strip().upper()
-        
-        return response_text.startswith("YES")
+        #starts with checks if the response starts with YES instead of hard check response_text == "YES"
+        return response_text.startswith("YES") 
     except Exception as e:
         # Don't show error here - let the caller handle it
         # This prevents duplicate error messages
@@ -399,11 +383,6 @@ def render_error_reporting_ui(question: Dict, current_q_idx: int):
             st.warning("⚠️ **Report Reviewed:** After review, we found that the question is correct. Please continue with the quiz.")
         else:
             st.info("ℹ️ You have already submitted a report for this question. Please continue with the quiz.")
-        return
-    
-    # If question was verified as invalid, show warning
-    if question_reported:
-        st.warning("⚠️ This question has been reported and removed from scoring.")
         return
     
     st.divider()
@@ -470,19 +449,16 @@ def render_error_reporting_ui(question: Dict, current_q_idx: int):
                             
                             # Reset error report state after submission (regardless of verification result)
                             st.session_state.error_report_active = False
-                            st.session_state.error_type_selected = None
                             
                             st.rerun()
                         except Exception as e:
                             st.error(f"Error verifying report: {str(e)}. Please try again.")
                             # Still mark as submitted even if there was an error, to prevent multiple attempts
                             st.session_state.error_report_active = False
-                            st.session_state.error_type_selected = None
                             
         with col2:
             if st.button("Cancel", use_container_width=True, key=f"cancel_error_{current_q_idx}"):
                 st.session_state.error_report_active = False
-                st.session_state.error_type_selected = None
                 st.rerun()
 
 def initialize_session_state():
@@ -517,8 +493,6 @@ def initialize_session_state():
         st.session_state.report_verification_results = {}  # Track verification results: {question_idx: True/False}
     if "error_report_active" not in st.session_state:
         st.session_state.error_report_active = False
-    if "error_type_selected" not in st.session_state:
-        st.session_state.error_type_selected = None
     if "quiz_grade" not in st.session_state:
         st.session_state.quiz_grade = None
     if "quiz_board" not in st.session_state:
@@ -542,7 +516,6 @@ def reset_quiz():
     st.session_state.submitted_reports = set()
     st.session_state.report_verification_results = {}
     st.session_state.error_report_active = False
-    st.session_state.error_type_selected = None
     st.session_state.quiz_grade = None
     st.session_state.quiz_board = None
     st.session_state.quiz_topic = None
@@ -563,110 +536,150 @@ def main():
     with st.sidebar:
         st.header("Quiz Configuration")
         
+        # Determine if inputs should be disabled (during active quiz, but not when completed)
+        inputs_disabled = st.session_state.quiz_started and not st.session_state.quiz_completed
+        
         # User name input
         st.subheader("User Information")
-        user_name = st.text_input("Your Name", value=st.session_state.user_name, placeholder="Enter your name")
-        if user_name:
+        user_name = st.text_input(
+            "Your Name", 
+            value=st.session_state.user_name, 
+            placeholder="Enter your name",
+            disabled=inputs_disabled
+        )
+        if user_name and not inputs_disabled:
             # Check if name changed before updating
-            previous_name = st.session_state.get("user_name", "")
-            if user_name != previous_name and previous_name and st.session_state.quiz_started:
+        #    previous_name = st.session_state.get("user_name", "")
+            #if user_name != previous_name and previous_name and st.session_state.quiz_started:
                 # If name changed, reset quiz
-                reset_quiz()
+            #    reset_quiz()
             st.session_state.user_name = user_name
-        else:
+        elif not user_name and not inputs_disabled:
             st.warning("⚠️ Please enter your name to start the quiz")
         
         st.divider()
         
-        # Grade selection
-        grade = st.selectbox("Grade", options=list(range(6, 13)), index=0)
-        
-        # Board selection
-        board = st.selectbox("Board", options=["CBSE", "ICSE", "IB"])
-        
-        # Topic input
-        topic = st.text_input("Math Topic", placeholder="e.g., Simple Equations, Mensuration, Geometry, Trigonometry")
+        # Use stored values when disabled, otherwise use current selection
+        if inputs_disabled:
+            # Show stored quiz configuration values
+            grade = st.session_state.quiz_grade
+            board = st.session_state.quiz_board
+            topic = st.session_state.quiz_topic
+            # Display as read-only
+            st.info(f"**Current Quiz:**\n- Grade: {grade}\n- Board: {board}\n- Topic: {topic}")
+            st.info("ℹ️ Quiz in progress. Complete the quiz to modify settings.")
+        else:
+            # Get stored values if they exist (for default values after quiz completion)
+            stored_grade = st.session_state.get("quiz_grade")
+            stored_board = st.session_state.get("quiz_board")
+            stored_topic = st.session_state.get("quiz_topic")
+            
+            # Grade selection - use stored grade as default if available
+            grade_options = list(range(6, 13))
+            grade_index = 0
+            if stored_grade is not None and stored_grade in grade_options:
+                grade_index = grade_options.index(stored_grade)
+            grade = st.selectbox("Grade", options=grade_options, index=grade_index)
+            
+            # Board selection - use stored board as default if available
+            board_options = ["CBSE", "ICSE", "IB"]
+            board_index = 0
+            if stored_board is not None and stored_board in board_options:
+                board_index = board_options.index(stored_board)
+            board = st.selectbox("Board", options=board_options, index=board_index)
+            
+            # Topic input - use stored topic as default if available
+            topic = st.text_input(
+                "Math Topic", 
+                value=stored_topic if stored_topic else "",
+                placeholder="e.g., Simple Equations, Mensuration, Geometry, Trigonometry"
+            )
         
         # Difficulty distribution
-        st.subheader("Difficulty Distribution")
-        easy_pct = st.slider("Easy (%)", min_value=0, max_value=100, value=20, step=5)
-        medium_pct = st.slider("Medium (%)", min_value=0, max_value=100, value=40, step=5)
-        hard_pct = st.slider("Hard (%)", min_value=0, max_value=100, value=20, step=5)
-        
-        # Calculate total
-        total_pct = easy_pct + medium_pct + hard_pct
-        
-        # Validation
-        if total_pct != 100:
-            st.error(f"⚠️ Total must be 100% (Current: {total_pct}%)")
-            can_start = False
+        if not inputs_disabled:
+            st.subheader("Difficulty Distribution")
+            easy_pct = st.slider("Easy (%)", min_value=0, max_value=100, value=20, step=5)
+            medium_pct = st.slider("Medium (%)", min_value=0, max_value=100, value=40, step=5)
+            hard_pct = st.slider("Hard (%)", min_value=0, max_value=100, value=20, step=5)
+            
+            # Calculate total
+            total_pct = easy_pct + medium_pct + hard_pct
+            
+            # Validation
+            if total_pct != 100:
+                st.error(f"⚠️ Total must be 100% (Current: {total_pct}%)")
+                can_start = False
+            else:
+                st.success(f"✓ Total: {total_pct}%")
+                can_start = True
+            
+            difficulty_distribution = {
+                "Easy": easy_pct,
+                "Medium": medium_pct,
+                "Hard": hard_pct
+            }
+            
+            # Number of questions
+            num_questions = st.number_input("Number of Questions", min_value=1, max_value=20, value=10, step=1)
         else:
-            st.success(f"✓ Total: {total_pct}%")
-            can_start = True
-        
-        difficulty_distribution = {
-            "Easy": easy_pct,
-            "Medium": medium_pct,
-            "Hard": hard_pct
-        }
-        
-        # Number of questions
-        num_questions = st.number_input("Number of Questions", min_value=1, max_value=20, value=10, step=1)
+            # Set default values when disabled (won't be used anyway)
+            can_start = False
+            difficulty_distribution = {"Easy": 20, "Medium": 40, "Hard": 20}
+            num_questions = 10
         
         # Generate quiz button
-        if st.button("Generate Quiz", type="primary", disabled=not can_start or not topic or not user_name):
-            if not user_name:
-                st.error("Please enter your name")
-            elif not topic:
-                st.error("Please enter a math topic")
-            else:
-                # Get previous questions for this user to avoid showing them again
-                previous_questions = get_user_previous_questions(user_name, grade, board, topic)
-                
-                # Check database for existing questions
-                total_available = count_questions(grade, board, topic)
-                
-                if previous_questions:
-                    st.info(f"📝 You've taken {len([q for q in load_user_history().get(user_name, {}).get('quizzes', []) if q.get('grade') == grade and q.get('board') == board and q.get('topic', '').lower() == topic.lower()])} quiz(zes) on this topic. Will show you new questions!")
-                
-                with st.spinner("Generating questions..."):
-                    questions = generate_questions(
-                        grade=grade,
-                        board=board,
-                        topic=topic,
-                        num_questions=num_questions,
-                        difficulty_distribution=difficulty_distribution,
-                        user_name=user_name,
-                        previous_questions=previous_questions
-                    )
+        if not inputs_disabled:
+            if st.button("Generate Quiz", type="primary", disabled=not can_start or not topic or not user_name):
+                if not user_name:
+                    st.error("Please enter your name")
+                elif not topic:
+                    st.error("Please enter a math topic")
+                else:
+                    # Reset quiz if there's an existing quiz (to start fresh)
+                    if st.session_state.quiz_started:
+                        reset_quiz()
                     
-                    if total_available > 0:
-                        if len(questions) == num_questions:
-                            # Check if we reused questions from database
-                            st.info(f"📚 Found {total_available} question(s) in database. Reusing existing questions!")
+                    # Get previous questions for this user to avoid showing them again
+                    previous_questions = get_user_previous_questions(user_name, grade, board, topic)
+                    
+                    # Check database for existing questions
+                    total_available = count_questions(grade, board, topic)
+                    
+                    if previous_questions:
+                        st.info(f"📝 You've taken {len([q for q in load_user_history().get(user_name, {}).get('quizzes', []) if q.get('grade') == grade and q.get('board') == board and q.get('topic', '').lower() == topic.lower()])} quiz(zes) on this topic. Will show you new questions!")
+                    
+                    with st.spinner("Generating questions..."):
+                        questions = generate_questions(
+                            grade=grade,
+                            board=board,
+                            topic=topic,
+                            num_questions=num_questions,
+                            difficulty_distribution=difficulty_distribution,
+                            user_name=user_name,
+                            previous_questions=previous_questions
+                        )
+                        
+                        
+                        if questions:
+                            st.session_state.questions = questions
+                            st.session_state.quiz_started = True
+                            st.session_state.current_question_index = 0
+                            st.session_state.user_answers = []
+                            st.session_state.score = 0
+                            st.session_state.show_feedback = False
+                            st.session_state.quiz_completed = False
+                            # Store quiz configuration for error reporting
+                            st.session_state.quiz_grade = grade
+                            st.session_state.quiz_board = board
+                            st.session_state.quiz_topic = topic
+                            
+                            # Save quiz to user history
+                            save_user_quiz(user_name, grade, board, topic, questions)
+                            
+                            st.success(f"Generated {len(questions)} questions!")
+                            st.rerun()
                         else:
-                            st.info(f"📚 Found {total_available} question(s) in database. Generating additional questions to meet requirements.")
-                    
-                    if questions:
-                        st.session_state.questions = questions
-                        st.session_state.quiz_started = True
-                        st.session_state.current_question_index = 0
-                        st.session_state.user_answers = []
-                        st.session_state.score = 0
-                        st.session_state.show_feedback = False
-                        st.session_state.quiz_completed = False
-                        # Store quiz configuration for error reporting
-                        st.session_state.quiz_grade = grade
-                        st.session_state.quiz_board = board
-                        st.session_state.quiz_topic = topic
-                        
-                        # Save quiz to user history
-                        save_user_quiz(user_name, grade, board, topic, questions)
-                        
-                        st.success(f"Generated {len(questions)} questions!")
-                        st.rerun()
-                    else:
-                        st.error("Failed to generate questions. Please try again.")
+                            st.error("Failed to generate questions. Please try again.")
         
         # Reset quiz button
         if st.session_state.quiz_started:
@@ -782,7 +795,6 @@ def main():
                             st.session_state.coaching_messages = []
                             st.session_state.coaching_complete = False
                             st.session_state.error_report_active = False
-                            st.session_state.error_type_selected = None
                             # Add a placeholder answer (won't count towards score)
                             if len(st.session_state.user_answers) <= current_q_idx:
                                 st.session_state.user_answers.append(-1)  # -1 indicates skipped/reported
@@ -794,7 +806,6 @@ def main():
                             st.session_state.coaching_messages = []
                             st.session_state.coaching_complete = False
                             st.session_state.error_report_active = False
-                            st.session_state.error_type_selected = None
                             # Add a placeholder answer if not already added
                             if len(st.session_state.user_answers) <= current_q_idx:
                                 st.session_state.user_answers.append(-1)  # -1 indicates skipped/reported
@@ -1038,11 +1049,6 @@ def main():
                 if st.session_state.coaching_complete:
                     st.divider()
                     
-                    # Recalculate points in case question was reported after answering
-                    if current_q_idx in st.session_state.reported_questions:
-                        points = 0  # Don't count reported questions
-                    # Otherwise, points already calculated above
-                        
                     if st.session_state.current_question_index < len(st.session_state.questions) - 1:
                         if st.button("Next Question", type="primary", key="next_after_coaching"):
                             st.session_state.current_question_index += 1
@@ -1051,7 +1057,6 @@ def main():
                             st.session_state.coaching_messages = []
                             st.session_state.coaching_complete = False
                             st.session_state.error_report_active = False
-                            st.session_state.error_type_selected = None
                             # Only add points if question was not reported
                             if current_q_idx not in st.session_state.reported_questions:
                                 st.session_state.score += points
@@ -1063,7 +1068,6 @@ def main():
                             st.session_state.coaching_messages = []
                             st.session_state.coaching_complete = False
                             st.session_state.error_report_active = False
-                            st.session_state.error_type_selected = None
                             # Only add points if question was not reported
                             if current_q_idx not in st.session_state.reported_questions:
                                 st.session_state.score += points
