@@ -363,9 +363,81 @@ Respond with ONLY "YES" if the error report is valid and correct, or "NO" if the
         print(f"Error in verify_error_report: {e}")
         return False
 
+def render_question_header_with_report_icon(question_num: int, current_q_idx: int):
+    """
+    Render question header with question number on left and report error icon on right.
+    
+    Args:
+        question_num: Question number to display
+        current_q_idx: Current question index
+    """
+    report_submitted = current_q_idx in st.session_state.submitted_reports
+    
+    # Add CSS for hover tooltip
+    st.markdown(
+        """
+        <style>
+        .report-icon-container {
+            position: relative;
+            display: inline-block;
+        }
+        .report-icon-container:hover::after {
+            content: "Report an Error";
+            position: absolute;
+            bottom: calc(100% + 10px);
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #1f1f1f;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            white-space: nowrap;
+            font-size: 13px;
+            z-index: 1000;
+            pointer-events: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            font-weight: 500;
+        }
+        .report-icon-container:hover::before {
+            content: "";
+            position: absolute;
+            bottom: calc(100% + 4px);
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: #1f1f1f;
+            z-index: 1001;
+            pointer-events: none;
+        }
+        /* Also target the button directly for better compatibility */
+        .report-icon-container button:hover {
+            cursor: pointer;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+    
+    # Create two columns: left for question number, right for report icon
+    col_left, col_right = st.columns([10, 1])
+    
+    with col_left:
+        st.subheader(f"Question {question_num}")
+    
+    with col_right:
+        # Only show report icon if report hasn't been submitted yet
+        if not report_submitted:
+            # Wrap button in a div for tooltip
+            st.markdown('<div class="report-icon-container">', unsafe_allow_html=True)
+            if st.button("🚨", key=f"report_error_icon_{current_q_idx}", help="Report an Error", use_container_width=True):
+                st.session_state.error_report_active = True
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+
 def render_error_reporting_ui(question: Dict, current_q_idx: int):
     """
     Render the error reporting UI component.
+    Shows verification results inline, and opens a dialog for error selection.
     
     Args:
         question: Question dictionary
@@ -375,7 +447,7 @@ def render_error_reporting_ui(question: Dict, current_q_idx: int):
     report_submitted = current_q_idx in st.session_state.submitted_reports
     verification_result = st.session_state.report_verification_results.get(current_q_idx)
     
-    # If report has already been submitted (regardless of verification result), don't show reporting UI
+    # If report has already been submitted (regardless of verification result), show verification result inline
     if report_submitted:
         if question_reported:
             st.error("⚠️ **Report Verified:** We apologize for the error in this question. The question has been removed from your quiz and will not count towards your score.")
@@ -385,81 +457,99 @@ def render_error_reporting_ui(question: Dict, current_q_idx: int):
             st.info("ℹ️ You have already submitted a report for this question. Please continue with the quiz.")
         return
     
-    st.divider()
-    st.markdown("**Report an Error**")
-    
-    if not st.session_state.error_report_active:
-        if st.button("🚨 Report Error", key=f"report_error_btn_{current_q_idx}"):
-            st.session_state.error_report_active = True
-            st.rerun()
-    else:
-        st.info("Please select the type of error:")
-        error_type = st.radio(
-            "Error Type:",
-            options=["missing_answer", "multiple_correct", "incomplete"],
-            format_func=lambda x: {
-                "missing_answer": "1. Right answer missing in the options",
-                "multiple_correct": "2. More than one options are correct",
-                "incomplete": "3. Question is incomplete"
-            }[x],
-            key=f"error_type_radio_{current_q_idx}"
-        )
-        
-        col1, col2 = st.columns([1, 1])
-        with col1:
-            if st.button("Submit Report", type="primary", use_container_width=True, key=f"submit_error_{current_q_idx}"):
-                # Get grade, board, topic from session state
-                grade = st.session_state.get("quiz_grade")
-                board = st.session_state.get("quiz_board")
-                topic = st.session_state.get("quiz_topic")
-                
-                # Debug: Check if values are set
-                if not grade or not board or not topic:
-                    st.error(f"⚠️ Quiz configuration missing. Grade: {grade}, Board: {board}, Topic: {topic}. Please restart the quiz.")
-                else:
-                    # Mark that a report has been submitted for this question
-                    st.session_state.submitted_reports.add(current_q_idx)
+    # Show error reporting dialog if error_report_active is True
+    if st.session_state.error_report_active:
+        # Use variables from outer scope - they're available here
+        # Define the dialog function with closure over the question variables
+        @st.dialog("🚨 Report an Error")
+        def error_report_dialog():
+            # Use variables from outer scope (question, current_q_idx)
+            # These are captured in the closure
+            dialog_question = question
+            dialog_q_idx = current_q_idx
+            
+            # Modal header
+            st.markdown("### 🚨 Report an Error")
+            st.divider()
+            
+            # Show question context
+            st.markdown(f"**Question:** {dialog_question['question']}")
+            st.caption("Please select the type of error you found:")
+            st.divider()
+            
+            # Error type selection
+            error_type = st.radio(
+                "Error Type:",
+                options=["missing_answer", "multiple_correct", "incomplete"],
+                format_func=lambda x: {
+                    "missing_answer": "1. Right answer missing in the options",
+                    "multiple_correct": "2. More than one options are correct",
+                    "incomplete": "3. Question is incomplete"
+                }[x],
+                key=f"error_type_radio_{dialog_q_idx}"
+            )
+            
+            st.divider()
+            
+            # Submit and Cancel buttons
+            col1, col2 = st.columns([1, 1])
+            with col1:
+                if st.button("Submit Report", type="primary", use_container_width=True, key=f"submit_error_{dialog_q_idx}"):
+                    # Get grade, board, topic from session state
+                    grade = st.session_state.get("quiz_grade")
+                    board = st.session_state.get("quiz_board")
+                    topic = st.session_state.get("quiz_topic")
                     
-                    # Verify the error report
-                    with st.spinner("Verifying error report..."):
-                        try:
-                            is_valid = verify_error_report(
-                                question=question,
-                                error_type=error_type,
-                                grade=grade,
-                                board=board,
-                                topic=topic
-                            )
-                            
-                            # Store verification result in session state
-                            st.session_state.report_verification_results[current_q_idx] = is_valid
-                            
-                            if is_valid:
-                                # Error verified - apologize, remove from scoring, mark as invalid in DB
-                                # Mark question as reported and verified as invalid
-                                st.session_state.reported_questions.add(current_q_idx)
-                                
-                                # Mark question as invalid in database (instead of deleting)
-                                mark_question_invalid(
+                    # Debug: Check if values are set
+                    if not grade or not board or not topic:
+                        st.error(f"⚠️ Quiz configuration missing. Grade: {grade}, Board: {board}, Topic: {topic}. Please restart the quiz.")
+                    else:
+                        # Mark that a report has been submitted for this question
+                        st.session_state.submitted_reports.add(dialog_q_idx)
+                        
+                        # Verify the error report
+                        with st.spinner("Verifying error report..."):
+                            try:
+                                is_valid = verify_error_report(
+                                    question=dialog_question,
+                                    error_type=error_type,
                                     grade=grade,
                                     board=board,
-                                    topic=topic,
-                                    question_text=question['question']
+                                    topic=topic
                                 )
-                            
-                            # Reset error report state after submission (regardless of verification result)
-                            st.session_state.error_report_active = False
-                            
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"Error verifying report: {str(e)}. Please try again.")
-                            # Still mark as submitted even if there was an error, to prevent multiple attempts
-                            st.session_state.error_report_active = False
-                            
-        with col2:
-            if st.button("Cancel", use_container_width=True, key=f"cancel_error_{current_q_idx}"):
-                st.session_state.error_report_active = False
-                st.rerun()
+                                
+                                # Store verification result in session state
+                                st.session_state.report_verification_results[dialog_q_idx] = is_valid
+                                
+                                if is_valid:
+                                    # Error verified - apologize, remove from scoring, mark as invalid in DB
+                                    # Mark question as reported and verified as invalid
+                                    st.session_state.reported_questions.add(dialog_q_idx)
+                                    
+                                    # Mark question as invalid in database (instead of deleting)
+                                    mark_question_invalid(
+                                        grade=grade,
+                                        board=board,
+                                        topic=topic,
+                                        question_text=dialog_question['question']
+                                    )
+                                
+                                # Reset error report state after submission (regardless of verification result)
+                                st.session_state.error_report_active = False
+                                
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Error verifying report: {str(e)}. Please try again.")
+                                # Still mark as submitted even if there was an error, to prevent multiple attempts
+                                st.session_state.error_report_active = False
+                                
+            with col2:
+                if st.button("Cancel", use_container_width=True, key=f"cancel_error_{dialog_q_idx}"):
+                    st.session_state.error_report_active = False
+                    st.rerun()
+        
+        # Call the dialog function
+        error_report_dialog()
 
 def initialize_session_state():
     """Initialize session state variables."""
@@ -769,14 +859,15 @@ def main():
             st.progress(progress)
             st.caption(f"Question {question_num} of {total_questions} | Difficulty: {difficulty} | Score: {st.session_state.score}")
             
-            st.subheader(f"Question {question_num}")
-            st.markdown(f"**{question['question']}**")
-            st.markdown(f"*Difficulty: {difficulty}*")
-            
             # Show error reporting option before user answers
             current_q_idx = st.session_state.current_question_index
             question_reported = current_q_idx in st.session_state.reported_questions
             report_submitted = current_q_idx in st.session_state.submitted_reports
+            
+            # Render question header with report icon in two columns
+            render_question_header_with_report_icon(question_num, current_q_idx)
+            st.markdown(f"**{question['question']}**")
+            st.markdown(f"*Difficulty: {difficulty}*")
             
             if not st.session_state.show_feedback:
                 # Show error reporting UI before answering (only if not already submitted)
