@@ -1109,16 +1109,6 @@ def main():
                     if not is_correct:
                         st.divider()
                         st.success(f"✅ Correct answer: {chr(65+correct_answer_idx)}. {question['options'][correct_answer_idx]}")
-                        
-                    # Show all options with markers
-                    st.markdown("**All Options:**")
-                    for idx, option in enumerate(question["options"]):
-                        marker = ""
-                        if idx == correct_answer_idx:
-                            marker = " ✓ Correct Answer"
-                        if idx == user_answer and not is_correct:
-                            marker = " ✗ Your Answer (Incorrect)"
-                        st.markdown(f"{chr(65+idx)}. {option}{marker}")
                     
                 # Error reporting section (also available after feedback, but only if not already submitted)
                 report_submitted_after = current_q_idx in st.session_state.submitted_reports
