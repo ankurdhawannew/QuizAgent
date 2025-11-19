@@ -1,0 +1,1282 @@
+{
+  "Grade_6_CBSE": {
+    "Knowing Our Numbers": [
+      "Comparing Numbers",
+      "Place Value and Use of Commas",
+      "Large Numbers in Practice",
+      "Estimation",
+      "Using Brackets",
+      "Roman Numerals"
+    ],
+    "Whole Numbers": [
+      "Introduction to Whole Numbers",
+      "The Number Line",
+      "Properties of Whole Numbers (Closure, Commutativity, Associativity, Distributivity)",
+      "Patterns in Whole Numbers"
+    ],
+    "Playing with Numbers": [
+      "Factors and Multiples",
+      "Prime and Composite Numbers",
+      "Tests for Divisibility of Numbers",
+      "Common Factors and Common Multiples",
+      "Prime Factorisation",
+      "Highest Common Factor (HCF)",
+      "Lowest Common Multiple (LCM)"
+    ],
+    "Basic Geometrical Ideas": [
+      "Points, Lines, Line Segments, Rays",
+      "Intersecting and Parallel Lines",
+      "Curves",
+      "Polygons",
+      "Angles, Vertices, and Sides",
+      "Triangles",
+      "Quadrilaterals",
+      "Circles"
+    ],
+    "Understanding Elementary Shapes": [
+      "Measuring Line Segments",
+      "Types of Angles (Right, Straight, Acute, Obtuse, Reflex)",
+      "Measuring Angles",
+      "Perpendicular Lines",
+      "Classification of Triangles (by sides and angles)",
+      "Types of Quadrilaterals",
+      "Polygons",
+      "Three Dimensional Shapes (Faces, Edges, Vertices)"
+    ],
+    "Integers": [
+      "Introduction to Integers",
+      "Representation of Integers on a Number Line",
+      "Ordering of Integers",
+      "Addition and Subtraction of Integers on a Number Line"
+    ],
+    "Fractions": [
+      "Concept of a Fraction",
+      "Fraction on the Number Line",
+      "Types of Fractions (Proper, Improper, Mixed)",
+      "Equivalent Fractions",
+      "Simplest Form of a Fraction",
+      "Comparing Like and Unlike Fractions",
+      "Addition and Subtraction of Fractions"
+    ],
+    "Decimals": [
+      "Tenths and Hundredths",
+      "Comparing Decimals",
+      "Using Decimals in Money, Length, and Weight",
+      "Addition of Numbers with Decimals",
+      "Subtraction of Decimals"
+    ],
+    "Data Handling": [
+      "Recording and Organisation of Data",
+      "Pictographs",
+      "Interpretation of a Bar Graph",
+      "Drawing a Bar Graph"
+    ],
+    "Mensuration": [
+      "Perimeter of Rectilinear Figures",
+      "Area of a Rectangle",
+      "Area of a Square"
+    ],
+    "Algebra": [
+      "Introduction to Algebra and Variables",
+      "Matchstick Patterns",
+      "Use of Variables in Common Rules",
+      "Expressions with Variables",
+      "Using Expressions Practically",
+      "What is an Equation?",
+      "Solution of an Equation by Trial and Error"
+    ],
+    "Ratio and Proportion": [
+      "Concept of Ratio",
+      "Proportion",
+      "Unitary Method"
+    ],
+    "Symmetry": [
+      "Making Symmetric Figures",
+      "Figures with one, two or multiple Lines of Symmetry",
+      "Reflection and Symmetry"
+    ],
+    "Practical Geometry": [
+      "Construction of a Circle",
+      "Construction of a Line Segment",
+      "Constructing a Copy of a Line Segment",
+      "Constructing Perpendiculars",
+      "Constructing a Perpendicular Bisector of a Line Segment",
+      "Constructing Angles of specific measures (60°, 30°, 120°, 90°, 45°)",
+      "Constructing a copy of an angle",
+      "Bisector of an Angle"
+    ]
+  },
+  "Grade_6_ICSE": {
+    "Number System": [
+      "Knowing our Numbers: Estimation and Roman Numerals",
+      "Whole Numbers: Properties and Number Line Operations",
+      "Playing with Numbers: Factors, Multiples, HCF, LCM",
+      "Integers: Representation, Ordering, Addition and Subtraction",
+      "Fractions: Types, Comparison, Operations (+, -, ×, ÷)",
+      "Decimals: Place Value, Comparison, Operations (+, -, ×, ÷)"
+    ],
+    "Ratio and Proportion": [
+      "Concept of Ratio",
+      "Proportion as Equality of Ratios",
+      "Unitary Method"
+    ],
+    "Algebra": [
+      "Introduction to Algebra: Variables and Constants",
+      "Expressions with Variables",
+      "Using Expressions in Practical Situations",
+      "Introduction to Equations and their Solutions"
+    ],
+    "Geometry": [
+      "Basic Geometrical Ideas: Points, Lines, Angles, Curves, Polygons",
+      "Understanding Elementary Shapes: Triangles, Quadrilaterals, Polygons",
+      "Three-Dimensional Shapes: Cubes, Cuboids, Cylinders, Cones, Spheres",
+      "Symmetry: Line of Symmetry and Reflection",
+      "Practical Geometry: Construction using Ruler and Compasses"
+    ],
+    "Mensuration": [
+      "Perimeter of Rectangles and Regular Polygons",
+      "Area of Rectangles and Squares"
+    ],
+    "Data Handling": [
+      "Recording and Organising Data",
+      "Pictographs: Interpretation and Drawing",
+      "Bar Graphs: Interpretation and Drawing"
+    ]
+  },
+  "Grade_6_IB": {
+    "Number": [
+      "Integers and the Number Line",
+      "Operations with Integers",
+      "Factors, Multiples, and Primes",
+      "Highest Common Factor (HCF) and Lowest Common Multiple (LCM)",
+      "Fractions and Equivalent Fractions",
+      "Operations with Fractions",
+      "Decimals and Place Value",
+      "Operations with Decimals",
+      "Connecting Fractions, Decimals, and Percentages",
+      "Ratio and Proportion",
+      "Exponents and Square Roots"
+    ],
+    "Patterns and Algebra": [
+      "Investigating Patterns and Sequences",
+      "Introduction to Variables and Algebraic Expressions",
+      "Simplifying Algebraic Expressions",
+      "Order of Operations (PEMDAS/BODMAS)",
+      "Solving One-Step Equations",
+      "The Cartesian Coordinate Plane (Four Quadrants)"
+    ],
+    "Measurement": [
+      "Metric System of Measurement (Length, Mass, Capacity)",
+      "Converting Units of Measurement",
+      "Perimeter of Polygons",
+      "Area of Squares, Rectangles, Triangles, and Parallelograms",
+      "Circumference and Area of Circles",
+      "Volume of Cubes and Cuboids (Rectangular Prisms)",
+      "Calculating with Time"
+    ],
+    "Shape and Space": [
+      "Lines and Angles (Acute, Obtuse, Right, Straight, Reflex)",
+      "Angle Relationships (Complementary, Supplementary, Vertically Opposite)",
+      "Properties and Classification of Triangles",
+      "Properties and Classification of Quadrilaterals",
+      "Properties of 3D Shapes (Prisms, Pyramids, Cylinders)",
+      "Nets of 3D Shapes",
+      "Symmetry (Line and Rotational)",
+      "Transformations (Translation, Reflection, Rotation)"
+    ],
+    "Data Handling": [
+      "Data Collection Methods (Surveys, Observations)",
+      "Organizing Data in Frequency Tables",
+      "Data Representation (Bar Graphs, Line Graphs, Pie Charts, Pictographs)",
+      "Measures of Central Tendency (Mean, Median, Mode)",
+      "Range as a Measure of Spread",
+      "Introduction to Probability",
+      "Calculating Simple Probabilities"
+    ]
+  },
+  "Grade_7_CBSE": {
+    "Integers": [
+      "Properties of Addition and Subtraction of Integers",
+      "Multiplication of Integers and its Properties",
+      "Division of Integers and its Properties"
+    ],
+    "Fractions and Decimals": [
+      "Multiplication of Fractions",
+      "Division of Fractions",
+      "Multiplication of Decimal Numbers",
+      "Division of Decimal Numbers"
+    ],
+    "Data Handling": [
+      "Collection and Organisation of Data",
+      "Representative Values (Mean, Median, Mode)",
+      "Use of Bar Graphs with appropriate scale",
+      "Chance and Probability"
+    ],
+    "Simple Equations": [
+      "Setting up an equation",
+      "Solving an equation",
+      "Applications of Simple Equations to practical situations"
+    ],
+    "Lines and Angles": [
+      "Related Angles (Complementary, Supplementary, Adjacent, Linear Pair, Vertically Opposite)",
+      "Pairs of Lines (Intersecting, Transversal, Parallel)",
+      "Angles made by a Transversal",
+      "Checking for Parallel Lines"
+    ],
+    "The Triangle and its Properties": [
+      "Medians and Altitudes of a Triangle",
+      "Exterior Angle of a Triangle and its Property",
+      "Angle Sum Property of a Triangle",
+      "Sum of the Lengths of Two Sides of a Triangle",
+      "Right-angled Triangles and Pythagoras Property"
+    ],
+    "Congruence of Triangles": [
+      "Concept of Congruence",
+      "Congruence of Plane Figures and Line Segments",
+      "Criteria for Congruence of Triangles (SSS, SAS, ASA, RHS)"
+    ],
+    "Comparing Quantities": [
+      "Equivalent Ratios",
+      "Percentage as a way of Comparing Quantities",
+      "Converting Fractions and Decimals to Percentages",
+      "Profit and Loss as a Percentage",
+      "Simple Interest"
+    ],
+    "Rational Numbers": [
+      "Definition and Need for Rational Numbers",
+      "Equivalent Rational Numbers",
+      "Rational Numbers on a Number Line",
+      "Comparison of Rational Numbers",
+      "Operations on Rational Numbers (Addition, Subtraction, Multiplication, Division)"
+    ],
+    "Practical Geometry": [
+      "Construction of a Line Parallel to a Given Line",
+      "Construction of Triangles (SSS criterion)",
+      "Construction of Triangles (SAS criterion)",
+      "Construction of Triangles (ASA criterion)",
+      "Construction of a Right-Angled Triangle (RHS criterion)"
+    ],
+    "Perimeter and Area": [
+      "Perimeter and Area of Squares and Rectangles",
+      "Area of a Parallelogram",
+      "Area of a Triangle",
+      "Circumference and Area of a Circle",
+      "Area of Pathways or Borders",
+      "Conversion of Units"
+    ],
+    "Algebraic Expressions": [
+      "Terms, Factors and Coefficients of an Expression",
+      "Like and Unlike Terms",
+      "Monomials, Binomials, Trinomials and Polynomials",
+      "Addition and Subtraction of Algebraic Expressions",
+      "Finding the Value of an Expression"
+    ],
+    "Exponents and Powers": [
+      "Exponents and their Meaning",
+      "Laws of Exponents",
+      "Decimal Number System",
+      "Expressing Large Numbers in Standard Form"
+    ],
+    "Symmetry": [
+      "Lines of Symmetry for Regular Polygons",
+      "Rotational Symmetry",
+      "Order of Rotational Symmetry",
+      "Line Symmetry and Rotational Symmetry"
+    ],
+    "Visualising Solid Shapes": [
+      "Plane Figures and Solid Shapes (Faces, Edges, Vertices)",
+      "Nets for Building 3-D Shapes",
+      "Drawing Solids on a Flat Surface (Oblique & Isometric Sketches)",
+      "Viewing Different Sections of a Solid (Slicing, Shadow Play)"
+    ]
+  },
+  "Grade_7_ICSE": {
+    "Number System": [
+      "Integers and their Properties (Closure, Commutative, Associative, Distributive)",
+      "Multiplication and Division of Integers",
+      "Fractions and Decimals: Multiplication and Division",
+      "Rational Numbers: Definition, Representation on Number Line, Standard Form",
+      "Operations on Rational Numbers (Addition, Subtraction, Multiplication, Division)",
+      "Exponents and Powers: Laws of Exponents, Scientific Notation"
+    ],
+    "Ratio and Proportion": [
+      "Concept of Ratio",
+      "Proportion as an equality of two ratios",
+      "Unitary Method",
+      "Direct and Inverse Variation"
+    ],
+    "Algebra": [
+      "Algebraic Expressions: Terms, Factors, Coefficients",
+      "Like and Unlike Terms, Monomials, Binomials, Trinomials",
+      "Addition and Subtraction of Algebraic Expressions",
+      "Simple Linear Equations in One Variable",
+      "Solving Equations and Word Problems"
+    ],
+    "Geometry": [
+      "Lines and Angles: Pairs of angles (Complementary, Supplementary, Adjacent, Vertically Opposite)",
+      "Parallel Lines and Transversal: Corresponding Angles, Alternate Angles, Interior Angles",
+      "The Triangle and its Properties: Angle Sum Property, Exterior Angle Property",
+      "Medians and Altitudes of a Triangle",
+      "Pythagoras' Theorem and its applications",
+      "Congruence of Triangles: Criteria (SSS, SAS, ASA, RHS)",
+      "Symmetry: Line Symmetry and Rotational Symmetry"
+    ],
+    "Mensuration": [
+      "Perimeter and Area of Squares and Rectangles",
+      "Area of Parallelograms and Triangles",
+      "Area of Rhombus",
+      "Circles: Circumference and Area",
+      "Area of Rings and Paths"
+    ],
+    "Commercial Mathematics": [
+      "Percentage and its applications",
+      "Profit and Loss: Cost Price, Selling Price, Profit/Loss Percentage",
+      "Simple Interest: Calculation of Principal, Rate, Time, and Amount"
+    ],
+    "Data Handling": [
+      "Collection and Organisation of Data",
+      "Mean, Median, and Mode of ungrouped data",
+      "Construction and Interpretation of Bar Graphs and Double Bar Graphs",
+      "Probability: Basic concepts and simple problems"
+    ],
+    "Sets": [
+      "Introduction to Sets: Definition, Roster Form, Set-Builder Form",
+      "Types of Sets: Finite, Infinite, Empty, Singleton",
+      "Cardinal Number of a Set",
+      "Operations on Sets: Union and Intersection (using Venn diagrams)"
+    ]
+  },
+  "Grade_7_IB": {
+    "Number": [
+      "Operations with Integers (Addition, Subtraction, Multiplication, Division)",
+      "Fractions, Decimals, and Percentages",
+      "Converting between Fractions, Decimals, and Percentages",
+      "Ratio and Proportion",
+      "Exponents, Powers, and Square Roots",
+      "Scientific Notation",
+      "Financial Mathematics: Profit, Loss, Simple Interest"
+    ],
+    "Algebra": [
+      "Introduction to Algebraic Expressions",
+      "Simplifying Expressions and Collecting Like Terms",
+      "Substitution into Formulas",
+      "Solving One-step and Two-step Linear Equations",
+      "Investigating Patterns and Sequences",
+      "Representing Relationships on the Cartesian Plane"
+    ],
+    "Geometry and Measurement": [
+      "Angles on a Line, at a Point, and in Triangles",
+      "Properties of Parallel and Perpendicular Lines",
+      "Properties of 2D Shapes (Triangles and Quadrilaterals)",
+      "Perimeter and Area of 2D Shapes including Circles",
+      "Volume and Surface Area of 3D Shapes (Prisms and Cylinders)",
+      "The Pythagorean Theorem",
+      "Geometric Transformations (Translation, Reflection, Rotation)"
+    ],
+    "Statistics and Probability": [
+      "Data Collection and Sampling",
+      "Representing Data (Bar Charts, Pie Charts, Line Graphs, Stem-and-Leaf Diagrams)",
+      "Measures of Central Tendency (Mean, Median, Mode)",
+      "Measures of Spread (Range)",
+      "Theoretical and Experimental Probability",
+      "Sample Space Diagrams for Single Events"
+    ]
+  },
+  "Grade_8_CBSE": {
+    "Rational Numbers": [
+      "Properties of Rational Numbers",
+      "Representation on the Number Line",
+      "Rational Numbers between two Rational Numbers"
+    ],
+    "Linear Equations in One Variable": [
+      "Solving Equations with Linear Expressions on one Side and Numbers on the other",
+      "Solving Equations with Variables on both Sides",
+      "Reducing Equations to Simpler Form",
+      "Applications of Linear Equations"
+    ],
+    "Understanding Quadrilaterals": [
+      "Polygons and their Classification",
+      "Angle Sum Property",
+      "Types of Quadrilaterals",
+      "Properties of a Parallelogram",
+      "Special Parallelograms (Rhombus, Rectangle, Square)"
+    ],
+    "Data Handling": [
+      "Organising and Grouping Data",
+      "Circle Graph or Pie Chart",
+      "Histogram",
+      "Chance and Probability"
+    ],
+    "Squares and Square Roots": [
+      "Properties of Square Numbers",
+      "Finding Square Roots by Prime Factorisation",
+      "Finding Square Roots by Division Method",
+      "Estimating Square Roots"
+    ],
+    "Cubes and Cube Roots": [
+      "Cubes and Perfect Cubes",
+      "Properties of Cube Numbers",
+      "Finding Cube Roots by Prime Factorisation"
+    ],
+    "Comparing Quantities": [
+      "Ratios and Percentages",
+      "Profit and Loss, Discount, VAT",
+      "Simple Interest",
+      "Compound Interest",
+      "Applications of Compound Interest Formula"
+    ],
+    "Algebraic Expressions and Identities": [
+      "Addition and Subtraction of Algebraic Expressions",
+      "Multiplication of Algebraic Expressions",
+      "Standard Identities: (a+b)², (a-b)², (a+b)(a-b)",
+      "Applying Identities"
+    ],
+    "Mensuration": [
+      "Area of Trapezium and General Quadrilaterals",
+      "Area of Polygons",
+      "Surface Area of Cube, Cuboid, and Cylinder",
+      "Volume of Cube, Cuboid, and Cylinder",
+      "Volume and Capacity"
+    ],
+    "Exponents and Powers": [
+      "Powers with Negative Exponents",
+      "Laws of Exponents",
+      "Use of Exponents to Express Small Numbers in Standard Form"
+    ],
+    "Direct and Inverse Proportions": [
+      "Direct Proportion",
+      "Inverse Proportion",
+      "Problem Solving"
+    ],
+    "Factorisation": [
+      "Method of Common Factors",
+      "Factorisation by Regrouping Terms",
+      "Factorisation using Identities",
+      "Division of Algebraic Expressions"
+    ],
+    "Introduction to Graphs": [
+      "The Cartesian Plane and Coordinates",
+      "Line Graphs and Linear Graphs",
+      "Reading and Interpreting Graphs"
+    ]
+  },
+  "Grade_8_ICSE": {
+    "Rational Numbers": [
+      "Properties of Rational Numbers",
+      "Representation on the Number Line",
+      "Operations and Word Problems"
+    ],
+    "Exponents and Powers": [
+      "Laws of Exponents with integral powers",
+      "Expressing numbers in Standard Form (Scientific Notation)",
+      "Negative Exponents"
+    ],
+    "Squares and Square Roots": [
+      "Properties of Square Numbers",
+      "Finding Square Roots by Prime Factorisation",
+      "Finding Square Roots by Long Division Method"
+    ],
+    "Cubes and Cube Roots": [
+      "Properties of Cube Numbers",
+      "Finding Cube Roots by Prime Factorisation"
+    ],
+    "Algebraic Expressions and Identities": [
+      "Addition, Subtraction, Multiplication and Division of Algebraic Expressions",
+      "Standard Identities: (a+b)², (a-b)², a²-b², (x+a)(x+b)",
+      "Application of Identities"
+    ],
+    "Factorisation": [
+      "Method of Common Factors",
+      "Factorisation by Regrouping Terms",
+      "Factorisation using Identities",
+      "Factorisation of the form (x+a)(x+b)",
+      "Division of Polynomials"
+    ],
+    "Linear Equations in One Variable": [
+      "Solving equations with linear expressions on one side and numbers on the other",
+      "Solving equations with variables on both sides",
+      "Reducing equations to simpler form",
+      "Applications and Word Problems"
+    ],
+    "Percentage and its Applications": [
+      "Finding Increase or Decrease Percent",
+      "Profit and Loss, Discount",
+      "Sales Tax and Value Added Tax (VAT)"
+    ],
+    "Compound Interest": [
+      "Calculating Compound Interest",
+      "Formula for Compound Interest",
+      "Applications in Growth and Depreciation"
+    ],
+    "Direct and Inverse Proportions": [
+      "Concept and Problems of Direct Proportion",
+      "Concept and Problems of Inverse Proportion",
+      "Time and Work Problems"
+    ],
+    "Understanding Quadrilaterals": [
+      "Polygons and their Classification",
+      "Angle Sum Property of a Polygon",
+      "Types of Quadrilaterals: Trapezium, Kite, Parallelogram",
+      "Properties of Parallelogram, Rhombus, Rectangle, and Square"
+    ],
+    "Practical Geometry": [
+      "Construction of Quadrilaterals given different conditions (sides, diagonals, angles)"
+    ],
+    "Visualising Solid Shapes": [
+      "Views of 3D-Shapes (Top, Front, Side)",
+      "Faces, Edges, and Vertices",
+      "Euler's Formula"
+    ],
+    "Mensuration": [
+      "Area of Trapezium and General Quadrilateral",
+      "Area of Polygons",
+      "Surface Area of Cube, Cuboid, and Cylinder",
+      "Volume of Cube, Cuboid, and Cylinder"
+    ],
+    "Data Handling": [
+      "Organising and Grouping Data (Frequency Distribution)",
+      "Bar Graphs and Histograms",
+      "Circle Graph or Pie Chart",
+      "Introduction to Probability"
+    ],
+    "Introduction to Graphs": [
+      "The Cartesian Plane and Coordinates",
+      "Line Graphs",
+      "Linear Graphs"
+    ]
+  },
+  "Grade_8_IB": {
+    "Number": [
+      "Operations with Rational Numbers (Integers, Fractions, Decimals)",
+      "Exponents and Powers",
+      "Square Roots and Cube Roots",
+      "Scientific Notation",
+      "Ratios and Proportions",
+      "Percentages, Profit, Loss, and Simple Interest"
+    ],
+    "Algebra": [
+      "Algebraic Expressions and Identities",
+      "Addition, Subtraction, and Multiplication of Polynomials",
+      "Factorization of Algebraic Expressions",
+      "Solving Linear Equations in One Variable",
+      "Introduction to Linear Graphs and the Cartesian Plane"
+    ],
+    "Geometry and Measurement": [
+      "Properties of Quadrilaterals and Polygons",
+      "Geometric Constructions",
+      "Area of 2D Shapes (Trapeziums, Rhombuses, General Polygons)",
+      "Surface Area and Volume of 3D Shapes (Cubes, Cuboids, Cylinders)",
+      "The Pythagorean Theorem and its Converse",
+      "Transformational Geometry (Translation, Reflection, Rotation)"
+    ],
+    "Statistics and Probability": [
+      "Data Handling and Organization",
+      "Graphical Representation of Data (Bar Graphs, Histograms, Pie Charts)",
+      "Measures of Central Tendency (Mean, Median, Mode)",
+      "Introduction to Probability",
+      "Calculating Probability of Events"
+    ]
+  },
+  "Grade_9_CBSE": {
+    "Number Systems": [
+      "Introduction to Number Systems",
+      "Irrational Numbers",
+      "Real Numbers and their Decimal Expansions",
+      "Representing Real Numbers on the Number Line",
+      "Operations on Real Numbers",
+      "Laws of Exponents for Real Numbers"
+    ],
+    "Polynomials": [
+      "Polynomials in One Variable",
+      "Zeroes of a Polynomial",
+      "Factorisation of Polynomials",
+      "Algebraic Identities"
+    ],
+    "Coordinate Geometry": [
+      "Cartesian System",
+      "Plotting a Point in the Plane"
+    ],
+    "Linear Equations in Two Variables": [
+      "Introduction to Linear Equations",
+      "Solution of a Linear Equation",
+      "Graph of a Linear Equation in Two Variables",
+      "Equations of Lines Parallel to the x-axis and y-axis"
+    ],
+    "Introduction to Euclid's Geometry": [
+      "Euclid's Definitions, Axioms, and Postulates",
+      "Equivalent Versions of Euclid's Fifth Postulate"
+    ],
+    "Lines and Angles": [
+      "Basic Terms and Definitions",
+      "Intersecting Lines and Non-intersecting Lines",
+      "Pairs of Angles",
+      "Parallel Lines and a Transversal",
+      "Lines Parallel to the Same Line",
+      "Angle Sum Property of a Triangle"
+    ],
+    "Triangles": [
+      "Congruence of Triangles",
+      "Criteria for Congruence of Triangles (SAS, ASA, SSS, RHS)",
+      "Properties of a Triangle",
+      "Inequalities in a Triangle"
+    ],
+    "Quadrilaterals": [
+      "Properties of a Parallelogram",
+      "Conditions for a Quadrilateral to be a Parallelogram",
+      "The Mid-point Theorem"
+    ],
+    "Circles": [
+      "Circles and its Related Terms",
+      "Angle Subtended by a Chord at a Point",
+      "Perpendicular from the Centre to a Chord",
+      "Circle through Three Points",
+      "Equal Chords and Their Distances from the Centre",
+      "Angle Subtended by an Arc of a Circle",
+      "Cyclic Quadrilaterals"
+    ],
+    "Heron's Formula": [
+      "Area of a Triangle by Heron's Formula",
+      "Application of Heron's Formula in finding Areas of Quadrilaterals"
+    ],
+    "Surface Areas and Volumes": [
+      "Surface Area of a Cuboid and a Cube",
+      "Surface Area of a Right Circular Cylinder",
+      "Surface Area of a Right Circular Cone",
+      "Surface Area of a Sphere and Hemisphere",
+      "Volume of a Cuboid and Cube",
+      "Volume of a Cylinder",
+      "Volume of a Right Circular Cone",
+      "Volume of a Sphere and Hemisphere"
+    ],
+    "Statistics": [
+      "Collection and Presentation of Data",
+      "Graphical Representation of Data (Bar graphs, Histograms, Frequency Polygons)"
+    ]
+  },
+  "Grade_9_ICSE": {
+    "Commercial Mathematics": [
+      "Compound Interest (without using formula)",
+      "Compound Interest (using formula)"
+    ],
+    "Algebra": [
+      "Expansions",
+      "Factorisation",
+      "Simultaneous Linear Equations in Two Variables",
+      "Indices (Exponents)",
+      "Logarithms"
+    ],
+    "Geometry": [
+      "Triangles (Congruency, Isosceles triangle properties, Inequalities)",
+      "Mid-point Theorem and its Converse",
+      "Pythagoras Theorem and its Converse",
+      "Rectilinear Figures (Quadrilaterals and Parallelograms)",
+      "Theorems on Area",
+      "Circle (Chord properties and Arc properties)"
+    ],
+    "Statistics": [
+      "Presentation of Data (Frequency Distribution)",
+      "Graphical Representation (Histograms, Frequency Polygon, Ogive)",
+      "Measures of Central Tendency (Mean and Median of ungrouped data)"
+    ],
+    "Mensuration": [
+      "Area and Perimeter of Plane Figures (Triangle, Quadrilaterals)",
+      "Area and Circumference of a Circle",
+      "Surface Area and Volume of 3D Solids (Cube, Cuboid, Cylinder)"
+    ],
+    "Trigonometry": [
+      "Trigonometric Ratios",
+      "Trigonometric Ratios of Standard Angles (0°, 30°, 45°, 60°, 90°)",
+      "Trigonometric Ratios of Complementary Angles",
+      "Simple 2-D problems on Heights and Distances"
+    ],
+    "Coordinate Geometry": [
+      "Cartesian System and Plotting of Points",
+      "Distance Formula",
+      "Section Formula and Mid-point Formula"
+    ],
+    "Rational and Irrational Numbers": [
+      "Representation on the number line",
+      "Properties of rational and irrational numbers",
+      "Surds and rationalization"
+    ]
+  },
+  "Grade_9_IB": {
+    "Number": [
+      "Real number systems (rational and irrational numbers)",
+      "Set theory and Venn diagrams",
+      "Laws of exponents and radicals",
+      "Scientific notation (Standard Form)",
+      "Percentages, profit and loss, simple and compound interest",
+      "Ratio, proportion, and rates of change"
+    ],
+    "Algebra": [
+      "Expanding and factorizing algebraic expressions, including quadratic expressions",
+      "Solving linear equations and inequalities",
+      "Solving systems of linear equations simultaneously",
+      "Functions: domain, range, and notation",
+      "Graphing linear and quadratic functions",
+      "Solving quadratic equations by factoring and using the quadratic formula"
+    ],
+    "Geometry and Trigonometry": [
+      "Properties of 2D and 3D shapes",
+      "Pythagorean theorem and its applications",
+      "Coordinate geometry: distance, midpoint, and gradient of a line",
+      "Right-angled triangle trigonometry (SOH CAH TOA)",
+      "Surface area and volume of prisms, cylinders, pyramids, cones, and spheres",
+      "Geometric transformations: translation, reflection, rotation, and enlargement"
+    ],
+    "Statistics and Probability": [
+      "Data collection and sampling techniques",
+      "Representation of data: frequency tables, histograms, and cumulative frequency graphs",
+      "Measures of central tendency for grouped and ungrouped data (mean, median, mode)",
+      "Measures of dispersion: range, interquartile range, and box-and-whisker plots",
+      "Theoretical and experimental probability",
+      "Probability of combined events using tree diagrams and Venn diagrams"
+    ]
+  },
+  "Grade_10_CBSE": {
+    "Real Numbers": [
+      "Fundamental Theorem of Arithmetic",
+      "Proofs of Irrationality",
+      "Decimal Expansions of Rational Numbers"
+    ],
+    "Polynomials": [
+      "Geometrical Meaning of the Zeroes of a Polynomial",
+      "Relationship between Zeroes and Coefficients of a Polynomial"
+    ],
+    "Pair of Linear Equations in Two Variables": [
+      "Graphical Method of Solution",
+      "Algebraic Methods of Solution (Substitution and Elimination)",
+      "Consistency and Inconsistency of Solutions"
+    ],
+    "Quadratic Equations": [
+      "Solution of Quadratic Equations by Factorisation",
+      "Solution of Quadratic Equations by Quadratic Formula",
+      "Nature of Roots"
+    ],
+    "Arithmetic Progressions": [
+      "nth Term of an AP",
+      "Sum of First n Terms of an AP"
+    ],
+    "Triangles": [
+      "Concept of Similarity",
+      "Criteria for Similarity of Triangles",
+      "Basic Proportionality Theorem (Thales' Theorem)"
+    ],
+    "Coordinate Geometry": [
+      "Distance Formula",
+      "Section Formula (Internal Division)"
+    ],
+    "Introduction to Trigonometry": [
+      "Trigonometric Ratios",
+      "Trigonometric Ratios of Specific Angles (0°, 30°, 45°, 60°, 90°)",
+      "Trigonometric Identities (sin²A + cos²A = 1)"
+    ],
+    "Some Applications of Trigonometry": [
+      "Heights and Distances",
+      "Angle of Elevation and Angle of Depression"
+    ],
+    "Circles": [
+      "Tangent to a Circle",
+      "Number of Tangents from a Point on a Circle",
+      "Properties of Tangents"
+    ],
+    "Areas Related to Circles": [
+      "Area of Sector and Segment of a Circle",
+      "Areas of Combinations of Plane Figures"
+    ],
+    "Surface Areas and Volumes": [
+      "Surface Area of a Combination of Solids",
+      "Volume of a Combination of Solids",
+      "Conversion of Solid from One Shape to Another"
+    ],
+    "Statistics": [
+      "Mean of Grouped Data (Direct and Assumed Mean Method)",
+      "Mode of Grouped Data",
+      "Median of Grouped Data"
+    ],
+    "Probability": [
+      "Classical Definition of Probability",
+      "Simple Problems on Calculating Probability"
+    ]
+  },
+  "Grade_10_ICSE": {
+    "Commercial Mathematics": [
+      "Goods and Services Tax (GST)",
+      "Banking (Recurring Deposit Accounts)",
+      "Shares and Dividends"
+    ],
+    "Algebra": [
+      "Linear Inequations",
+      "Quadratic Equations in one variable",
+      "Ratio and Proportion",
+      "Factorization of polynomials (Remainder and Factor Theorems)",
+      "Matrices",
+      "Arithmetic Progression (AP)",
+      "Geometric Progression (GP)",
+      "Coordinate Geometry (Reflection, Section Formula, Equation of a Line)"
+    ],
+    "Geometry": [
+      "Similarity (of triangles, polygons)",
+      "Circles (Angle properties, Cyclic properties, Tangent and Secant properties)",
+      "Constructions (Tangents to a circle, Circumscribing and Inscribing a circle)"
+    ],
+    "Mensuration": [
+      "Area and volume of Cylinder, Cone and Sphere",
+      "Conversion of solids from one shape to another",
+      "Combination of solids"
+    ],
+    "Trigonometry": [
+      "Trigonometrical Identities",
+      "Heights and Distances"
+    ],
+    "Statistics": [
+      "Measures of Central Tendency (Mean, Median, Mode for grouped and ungrouped data)",
+      "Graphical Representation (Histograms, Frequency Polygons, Ogives)",
+      "Quartiles and Interquartile Range"
+    ],
+    "Probability": [
+      "Random experiments and sample space",
+      "Events and definition of probability",
+      "Simple problems on single events"
+    ]
+  },
+  "Grade_10_IB": {
+    "Number and Algebra": [
+      "Number sets and properties (Natural, Integers, Rational, Real)",
+      "Laws of exponents and radicals",
+      "Logarithms and their properties",
+      "Arithmetic and Geometric sequences and series",
+      "Algebraic manipulation (expansion, factorization)",
+      "Solving linear, quadratic, and simultaneous equations",
+      "Binomial theorem (introduction)"
+    ],
+    "Functions": [
+      "Concept of a function, domain, and range",
+      "Function notation and graphing",
+      "Linear, quadratic, exponential, and logarithmic functions",
+      "Transformations of graphs (translations, reflections, stretches)",
+      "Composite and inverse functions"
+    ],
+    "Geometry and Trigonometry": [
+      "Coordinate geometry (distance, midpoint, gradient)",
+      "Equation of a straight line",
+      "Right-angled trigonometry (SOH CAH TOA)",
+      "Sine and Cosine rules",
+      "The unit circle and radian measure",
+      "Trigonometric identities and equations",
+      "Area and volume of 3D shapes"
+    ],
+    "Statistics and Probability": [
+      "Data presentation (histograms, cumulative frequency, box plots)",
+      "Measures of central tendency (mean, median, mode)",
+      "Measures of dispersion (range, IQR, standard deviation)",
+      "Correlation and linear regression",
+      "Concepts of probability (sample space, events)",
+      "Venn diagrams and tree diagrams",
+      "Combined, mutually exclusive, and independent events",
+      "Conditional probability"
+    ]
+  },
+  "Grade_11_CBSE": {
+    "Sets": [
+      "Sets and their Representations",
+      "The Empty Set, Finite and Infinite Sets, Equal Sets",
+      "Subsets, Power Set, Universal Set",
+      "Venn Diagrams",
+      "Operations on Sets: Union, Intersection, Difference",
+      "Complement of a Set",
+      "Practical Problems on Union and Intersection of Two Sets"
+    ],
+    "Relations and Functions": [
+      "Cartesian Product of Sets",
+      "Relations",
+      "Functions",
+      "Some functions and their graphs: Identity, Constant, Polynomial, Rational, Modulus, Signum, Greatest Integer Function",
+      "Algebra of real functions"
+    ],
+    "Trigonometric Functions": [
+      "Angles: Degree and Radian Measure",
+      "Trigonometric Functions and Signs",
+      "Domain and Range of Trigonometric Functions",
+      "Trigonometric Functions of Sum and Difference of Two Angles",
+      "Trigonometric Equations"
+    ],
+    "Principle of Mathematical Induction": [
+      "Motivation",
+      "The Principle of Mathematical Induction",
+      "Simple Applications"
+    ],
+    "Complex Numbers and Quadratic Equations": [
+      "Complex Numbers",
+      "Algebra of Complex Numbers",
+      "The Modulus and the Conjugate of a Complex Number",
+      "Argand Plane and Polar Representation",
+      "Quadratic Equations with real coefficients"
+    ],
+    "Linear Inequalities": [
+      "Inequalities",
+      "Algebraic Solutions of Linear Inequalities in One Variable and their Graphical Representation",
+      "Graphical Solution of Linear Inequalities in Two Variables",
+      "Solution of System of Linear Inequalities in Two Variables"
+    ],
+    "Permutations and Combinations": [
+      "Fundamental Principle of Counting",
+      "Permutations",
+      "Combinations"
+    ],
+    "Binomial Theorem": [
+      "Binomial theorem for positive integral indices",
+      "Pascal's Triangle",
+      "General and Middle Term in Binomial Expansion",
+      "Simple Applications"
+    ],
+    "Sequences and Series": [
+      "Sequences and Series",
+      "Arithmetic Progression (A.P.)",
+      "Geometric Progression (G.P.)",
+      "Relationship Between A.M. and G.M.",
+      "Sum to n terms of Special Series"
+    ],
+    "Straight Lines": [
+      "Slope of a Line",
+      "Various Forms of the Equation of a Line: Horizontal/Vertical, Point-Slope, Two-Point, Slope-Intercept, Intercept Form",
+      "Normal Form of a Line",
+      "General Equation of a Line",
+      "Distance of a Point From a Line"
+    ],
+    "Conic Sections": [
+      "Sections of a Cone",
+      "Circle",
+      "Parabola",
+      "Ellipse",
+      "Hyperbola"
+    ],
+    "Introduction to Three Dimensional Geometry": [
+      "Coordinate Axes and Coordinate Planes in Three Dimensional Space",
+      "Coordinates of a Point in Space",
+      "Distance between Two Points",
+      "Section Formula"
+    ],
+    "Limits and Derivatives": [
+      "Intuitive Idea of Derivatives",
+      "Limits",
+      "Limits of Trigonometric Functions",
+      "Derivatives",
+      "Algebra of derivative of functions"
+    ],
+    "Mathematical Reasoning": [
+      "Statements",
+      "New Statements from Old (Negation, Compound Statements)",
+      "Special Words/Phrases (And/Or, Quantifiers)",
+      "Implications (If-then, If and only if)",
+      "Validating Statements"
+    ],
+    "Statistics": [
+      "Measures of Dispersion: Range, Mean Deviation",
+      "Variance and Standard Deviation",
+      "Analysis of Frequency Distributions"
+    ],
+    "Probability": [
+      "Random Experiments, Outcomes and Sample Spaces",
+      "Event",
+      "Axiomatic Approach to Probability",
+      "Probability of an event"
+    ]
+  },
+  "Grade_11_ICSE": {
+    "Sets and Functions": [
+      "Sets, their representations, and types",
+      "Venn Diagrams and Operations on Sets",
+      "Relations, Domain, Co-domain, and Range",
+      "Functions, their Domain, Range, and Graphs",
+      "Sum, Difference, Product and Quotients of Functions"
+    ],
+    "Algebra": [
+      "Principle of Mathematical Induction",
+      "Complex Numbers and Quadratic Equations",
+      "Linear Inequalities",
+      "Permutations and Combinations",
+      "Binomial Theorem",
+      "Sequences and Series (Arithmetic and Geometric Progressions)"
+    ],
+    "Trigonometry": [
+      "Angles, Degrees and Radian Measure",
+      "Trigonometric Functions and their Graphs",
+      "Trigonometric Identities of Sum and Difference of Angles",
+      "Trigonometric Identities of Multiple and Sub-multiple Angles",
+      "Trigonometric Equations (General Solutions)"
+    ],
+    "Coordinate Geometry": [
+      "Straight Lines (Various Forms and General Equation)",
+      "Distance of a Point from a Line",
+      "Conic Sections (Circle, Parabola, Ellipse, Hyperbola)"
+    ],
+    "Introduction to Three-Dimensional Geometry": [
+      "Coordinate Axes and Coordinate Planes in 3D",
+      "Coordinates of a Point",
+      "Distance between Two Points",
+      "Section Formula"
+    ],
+    "Calculus": [
+      "Limits of Polynomials, Rational, Trigonometric, Exponential and Logarithmic Functions",
+      "Derivatives as a rate of change",
+      "Derivatives of Polynomial and Trigonometric Functions"
+    ],
+    "Mathematical Reasoning": [
+      "Statements and Logical Connectives",
+      "Implications, Converse, and Contrapositive",
+      "Validating Statements"
+    ],
+    "Statistics and Probability": [
+      "Measures of Dispersion (Mean Deviation, Variance, Standard Deviation)",
+      "Analysis of Frequency Distributions",
+      "Probability (Axiomatic Approach)",
+      "Events and their Algebra",
+      "Correlation and Regression Analysis"
+    ]
+  },
+  "Grade_11_IB": {
+    "Number and Algebra": [
+      "Sequences and Series (Arithmetic and Geometric)",
+      "Exponents and Logarithms",
+      "The Binomial Theorem",
+      "Proof (including Proof by Induction for HL)",
+      "Complex Numbers (HL)",
+      "Systems of Linear Equations"
+    ],
+    "Functions": [
+      "Function Concepts (Domain, Range, Inverse, Composite)",
+      "Graphing Functions and their Characteristics",
+      "Transformations of Graphs",
+      "Quadratic Functions",
+      "Polynomial Functions (Factor and Remainder Theorems)",
+      "Exponential and Logarithmic Functions",
+      "Rational Functions"
+    ],
+    "Geometry and Trigonometry": [
+      "Coordinate Geometry in 2D and 3D",
+      "The Unit Circle, Radians, and Degrees",
+      "Trigonometric Ratios and Identities",
+      "Graphs of Trigonometric Functions",
+      "Solving Trigonometric Equations",
+      "The Sine Rule, Cosine Rule, and Area of a Triangle",
+      "Introduction to Vectors"
+    ],
+    "Statistics and Probability": [
+      "Descriptive Statistics (Measures of Central Tendency and Dispersion)",
+      "Data Presentation (Histograms, Box Plots, Cumulative Frequency)",
+      "Bivariate Statistics (Correlation and Linear Regression)",
+      "Concepts of Probability",
+      "Venn Diagrams and Tree Diagrams",
+      "Conditional Probability and Independence",
+      "Introduction to Probability Distributions (Binomial and Normal)"
+    ],
+    "Calculus": [
+      "Limits and Convergence",
+      "The Concept of the Derivative (Differentiation from First Principles)",
+      "Rules of Differentiation (Power, Chain, Product, Quotient)",
+      "Applications of Differentiation (Tangents, Normals, Rates of Change, Optimization)",
+      "Introduction to Integration (Anti-differentiation)"
+    ]
+  },
+  "Grade_12_CBSE": {
+    "Relations and Functions": [
+      "Types of relations: reflexive, symmetric, transitive and equivalence relations",
+      "One-to-one and onto functions"
+    ],
+    "Inverse Trigonometric Functions": [
+      "Definition, range, domain, principal value branch",
+      "Graphs of inverse trigonometric functions"
+    ],
+    "Matrices": [
+      "Concept, notation, order, equality, types of matrices, zero and identity matrix",
+      "Transpose of a matrix, symmetric and skew symmetric matrices",
+      "Operation on matrices: Addition, multiplication and multiplication with a scalar",
+      "Simple properties of addition, multiplication and scalar multiplication",
+      "Invertible matrices and proof of the uniqueness of inverse"
+    ],
+    "Determinants": [
+      "Determinant of a square matrix (up to 3 x 3 matrices)",
+      "Minors, co-factors and applications of determinants in finding the area of a triangle",
+      "Adjoint and inverse of a square matrix",
+      "Solving system of linear equations using inverse of a matrix"
+    ],
+    "Continuity and Differentiability": [
+      "Continuity and differentiability",
+      "Derivative of composite functions, chain rule",
+      "Derivative of inverse trigonometric functions, implicit functions, exponential and logarithmic functions",
+      "Logarithmic differentiation",
+      "Derivative of functions expressed in parametric forms",
+      "Second order derivatives"
+    ],
+    "Application of Derivatives": [
+      "Rate of change of quantities",
+      "Increasing and decreasing functions",
+      "Tangents and normals",
+      "Maxima and minima (first and second derivative test)"
+    ],
+    "Integrals": [
+      "Integration as inverse process of differentiation",
+      "Integration of a variety of functions by substitution, by partial fractions and by parts",
+      "Evaluation of simple integrals and problems based on them",
+      "Definite integrals as a limit of a sum",
+      "Fundamental Theorem of Calculus",
+      "Basic properties of definite integrals and evaluation of definite integrals"
+    ],
+    "Application of Integrals": [
+      "Applications in finding the area under simple curves (lines, circles, parabolas, ellipses)",
+      "Area between any of the two above said curves"
+    ],
+    "Differential Equations": [
+      "Definition, order and degree, general and particular solutions",
+      "Solution by method of separation of variables",
+      "Solution of homogeneous differential equations of first order and first degree",
+      "Solution of linear differential equation of the type dy/dx + py = q and dx/dy + px = q"
+    ],
+    "Vector Algebra": [
+      "Vectors and scalars, magnitude and direction of a vector",
+      "Direction cosines and direction ratios",
+      "Types of vectors, position vector of a point, components of a vector",
+      "Addition of vectors, multiplication of a vector by a scalar",
+      "Scalar (dot) product of vectors",
+      "Vector (cross) product of vectors"
+    ],
+    "Three Dimensional Geometry": [
+      "Direction cosines and direction ratios of a line",
+      "Cartesian equation and vector equation of a line",
+      "Coplanar and skew lines, shortest distance between two lines",
+      "Cartesian and vector equation of a plane",
+      "Angle between two lines, two planes, a line and a plane",
+      "Distance of a point from a plane"
+    ],
+    "Linear Programming": [
+      "Introduction, related terminology (constraints, objective function, optimization)",
+      "Mathematical formulation of L.P. problems",
+      "Graphical method of solution for problems in two variables",
+      "Feasible and infeasible regions (bounded and unbounded)",
+      "Optimal feasible solutions"
+    ],
+    "Probability": [
+      "Conditional probability, multiplication theorem on probability",
+      "Independent events, total probability, Bayes’ theorem",
+      "Random variable and its probability distribution",
+      "Mean of a random variable"
+    ]
+  },
+  "Grade_12_ICSE": {
+    "Relations and Functions": [
+      "Types of Relations: Reflexive, Symmetric, Transitive and Equivalence",
+      "Types of Functions: One-to-one and Onto functions",
+      "Inverse of a Function"
+    ],
+    "Algebra": [
+      "Matrices: Concept, Types, Transpose, Symmetric and Skew-symmetric matrices",
+      "Operations on Matrices: Addition, Multiplication, Scalar Multiplication",
+      "Determinants: Properties, Minors, Co-factors",
+      "Adjoint and Inverse of a Matrix",
+      "Solving system of linear equations using matrix method"
+    ],
+    "Calculus": [
+      "Continuity and Differentiability",
+      "Derivatives of Composite, Implicit, Inverse Trigonometric, Exponential and Logarithmic Functions",
+      "Logarithmic and Parametric Differentiation",
+      "Second Order Derivatives",
+      "Applications of Derivatives: Rate of Change, Increasing/Decreasing Functions, Tangents and Normals, Maxima and Minima",
+      "Indefinite Integrals: Integration by Substitution, by Parts, and by Partial Fractions",
+      "Definite Integrals and their Properties",
+      "Fundamental Theorem of Calculus",
+      "Differential Equations: Order, Degree, General and Particular Solutions",
+      "Solving Differential Equations: Separation of Variables, Homogeneous, Linear form"
+    ],
+    "Probability": [
+      "Conditional Probability and Multiplication Theorem",
+      "Independent Events",
+      "Total Probability and Bayes' Theorem",
+      "Random Variables and Probability Distributions",
+      "Mean and Variance of a Random Variable"
+    ],
+    "Vectors": [
+      "Concept of Vectors and Scalars",
+      "Types of Vectors and Vector Operations",
+      "Direction Cosines and Direction Ratios",
+      "Scalar (Dot) Product of Vectors",
+      "Vector (Cross) Product of Vectors",
+      "Projection of a Vector on a Line"
+    ],
+    "Three-Dimensional Geometry": [
+      "Direction Cosines and Ratios of a Line",
+      "Equation of a Line (Vector and Cartesian)",
+      "Shortest Distance between Skew Lines",
+      "Equation of a Plane (Vector and Cartesian)",
+      "Angle between Lines, Planes, and a Line and a Plane",
+      "Distance of a Point from a Plane"
+    ],
+    "Application of Calculus": [
+      "Application in Commerce and Economics",
+      "Cost, Revenue, and Profit Functions",
+      "Marginal Cost and Marginal Revenue",
+      "Break-even Point"
+    ],
+    "Linear Regression": [
+      "Lines of Regression (x on y, y on x)",
+      "Scatter Diagrams and Lines of Best Fit",
+      "Method of Least Squares",
+      "Regression Coefficients and their Properties"
+    ],
+    "Linear Programming": [
+      "Mathematical Formulation of L.P. Problems",
+      "Graphical Method of Solution",
+      "Constraints, Objective Function, Optimization",
+      "Feasible and Infeasible Regions and Solutions"
+    ]
+  },
+  "Grade_12_IB": {
+    "Number and Algebra": [
+      "Sequences and Series (Arithmetic & Geometric)",
+      "The Binomial Theorem",
+      "Exponents and Logarithms",
+      "Complex Numbers (Cartesian, Polar, Euler Forms)",
+      "De Moivre's Theorem and its Applications",
+      "Systems of Linear Equations",
+      "Mathematical Proof (Induction, Contradiction)"
+    ],
+    "Functions": [
+      "Function Concepts (Domain, Range, Inverse, Composite)",
+      "Graphing Functions and Transformations",
+      "Properties of Polynomial Functions",
+      "Properties of Exponential and Logarithmic Functions",
+      "Properties of Rational Functions",
+      "Solving Equations and Inequalities"
+    ],
+    "Geometry and Trigonometry": [
+      "The Unit Circle and Radian Measure",
+      "Trigonometric Identities and Equations",
+      "Graphs of Trigonometric Functions",
+      "Inverse Trigonometric Functions",
+      "Applications of Trigonometry (Sine and Cosine Rules)",
+      "Vectors in 2D and 3D",
+      "Scalar (Dot) and Vector (Cross) Products",
+      "Vector Equations of Lines and Planes"
+    ],
+    "Statistics and Probability": [
+      "Descriptive Statistics (Measures of Central Tendency and Dispersion)",
+      "Probability Theory (Conditional Probability, Bayes' Theorem)",
+      "Discrete Probability Distributions (Binomial, Poisson)",
+      "Continuous Probability Distributions (Normal Distribution)",
+      "Bivariate Statistics (Correlation and Linear Regression)",
+      "Hypothesis Testing (Chi-squared test, t-tests)"
+    ],
+    "Calculus": [
+      "Limits, Continuity and Differentiation from First Principles",
+      "Rules of Differentiation (Product, Quotient, Chain)",
+      "Implicit Differentiation and Higher Derivatives",
+      "Applications of Differentiation (Tangents, Normals, Optimization, Kinematics)",
+      "Indefinite and Definite Integration",
+      "Techniques of Integration (Substitution, By Parts)",
+      "Applications of Integration (Area between curves, Volumes of Revolution)",
+      "Differential Equations (Separation of Variables)",
+      "Maclaurin and Taylor Series"
+    ]
+  }
+}

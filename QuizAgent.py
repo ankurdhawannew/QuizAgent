@@ -15,6 +15,14 @@ from question_database import (
     get_invalid_questions_report,
     count_invalid_questions
 )
+from topics_manager import (
+    get_topic_subtopic_pairs,
+    prepopulate_topics,
+    add_topic,
+    get_topics_for_grade_board,
+    parse_topic_from_pair,
+    parse_subtopic_from_pair
+)
 
 # Load environment variables
 load_dotenv()
@@ -575,6 +583,10 @@ def initialize_session_state():
         st.session_state.coaching_messages = []
     if "coaching_complete" not in st.session_state:
         st.session_state.coaching_complete = False
+    if "coaching_pending_response" not in st.session_state:
+        st.session_state.coaching_pending_response = False
+    if "coaching_pending_question_data" not in st.session_state:
+        st.session_state.coaching_pending_question_data = None
     if "reported_questions" not in st.session_state:
         st.session_state.reported_questions = set()  # Track question indices that were reported and verified as invalid
     if "submitted_reports" not in st.session_state:
@@ -589,6 +601,10 @@ def initialize_session_state():
         st.session_state.quiz_board = None
     if "quiz_topic" not in st.session_state:
         st.session_state.quiz_topic = None
+    if "available_topic_subtopics" not in st.session_state:
+        st.session_state.available_topic_subtopics = []
+    if "current_grade_board_key" not in st.session_state:
+        st.session_state.current_grade_board_key = None
 
 def reset_quiz():
     """Reset quiz state."""
@@ -602,6 +618,8 @@ def reset_quiz():
     st.session_state.coaching_active = False
     st.session_state.coaching_messages = []
     st.session_state.coaching_complete = False
+    st.session_state.coaching_pending_response = False
+    st.session_state.coaching_pending_question_data = None
     st.session_state.reported_questions = set()
     st.session_state.submitted_reports = set()
     st.session_state.report_verification_results = {}
@@ -678,17 +696,64 @@ def main():
                 board_index = board_options.index(stored_board)
             board = st.selectbox("Board", options=board_options, index=board_index)
             
-            # Topic input - use stored topic as default if available
-            topic = st.text_input(
-                "Math Topic", 
-                value=stored_topic if stored_topic else "",
-                placeholder="e.g., Simple Equations, Mensuration, Geometry, Trigonometry"
+            # Topic input with typeahead functionality
+            # Check if grade/board combination changed
+            current_key = f"{grade}_{board}"
+            if (st.session_state.current_grade_board_key is None or 
+                st.session_state.current_grade_board_key != current_key):
+                # Grade or board changed, reload topics
+                st.session_state.current_grade_board_key = current_key
+                st.session_state.available_topic_subtopics = get_topic_subtopic_pairs(grade, board)
+            
+            # Get available topic-subtopic pairs for typeahead
+            available_topic_subtopics = st.session_state.available_topic_subtopics
+            
+            # Show typeahead selectbox with prepopulated topic-subtopic pairs
+            # Add option for custom topic entry
+            topic_options = ["-- Enter Custom Topic --"] + available_topic_subtopics
+            
+            # Find index of stored topic if it exists
+            selected_index = 0
+            if stored_topic:
+                # Try to find matching topic-subtopic pair
+                # Check both topic and subtopic since we now use subtopic for quiz generation
+                found = False
+                for idx, option in enumerate(available_topic_subtopics):
+                    parsed_topic = parse_topic_from_pair(option)
+                    parsed_subtopic = parse_subtopic_from_pair(option)
+                    if parsed_topic.lower() == stored_topic.lower() or parsed_subtopic.lower() == stored_topic.lower():
+                        selected_index = idx + 1
+                        found = True
+                        break
+                if not found:
+                    # Custom topic, show it in the input
+                    selected_index = 0
+            
+            selected_topic_option = st.selectbox(
+                "Math Topic",
+                options=topic_options,
+                index=selected_index,
+                help="Select from prepopulated topics/subtopics or choose 'Enter Custom Topic' to type your own"
             )
+            
+            # Handle topic selection
+            if selected_topic_option == "-- Enter Custom Topic --":
+                # Show text input for custom topic
+                custom_topic = st.text_input(
+                    "Enter Custom Topic",
+                    value=stored_topic if stored_topic else "",
+                    placeholder="Type your custom topic here"
+                )
+                topic = custom_topic.strip() if custom_topic else ""
+            else:
+                # Parse subtopic from "Topic - Subtopic" format for quiz generation
+                # Use subtopic instead of topic for more specific quiz generation
+                topic = parse_subtopic_from_pair(selected_topic_option)
         
         # Difficulty distribution
         if not inputs_disabled:
             st.subheader("Difficulty Distribution")
-            easy_pct = st.slider("Easy (%)", min_value=0, max_value=100, value=20, step=5)
+            easy_pct = st.slider("Easy (%)", min_value=0, max_value=100, value=40, step=5)
             medium_pct = st.slider("Medium (%)", min_value=0, max_value=100, value=40, step=5)
             hard_pct = st.slider("Hard (%)", min_value=0, max_value=100, value=20, step=5)
             
@@ -714,7 +779,7 @@ def main():
         else:
             # Set default values when disabled (won't be used anyway)
             can_start = False
-            difficulty_distribution = {"Easy": 20, "Medium": 40, "Hard": 20}
+            difficulty_distribution = {"Easy": 40, "Medium": 40, "Hard": 20}
             num_questions = 10
         
         # Generate quiz button
@@ -728,6 +793,22 @@ def main():
                     # Reset quiz if there's an existing quiz (to start fresh)
                     if st.session_state.quiz_started:
                         reset_quiz()
+                    
+                    # Save custom topic if it's not in the prepopulated list
+                    # Check if topic exists in any of the topic-subtopic pairs
+                    # Since we're using subtopic for quiz generation, check both topic and subtopic
+                    topic_exists = any(
+                        parse_topic_from_pair(pair).lower() == topic.lower() or
+                        parse_subtopic_from_pair(pair).lower() == topic.lower()
+                        for pair in st.session_state.available_topic_subtopics
+                    )
+                    
+                    if topic and not topic_exists:
+                        # Add as a topic (without subtopics) since user entered it as a custom topic
+                        add_topic(grade, board, topic)
+                        # Update available topic-subtopic pairs list
+                        st.session_state.available_topic_subtopics = get_topic_subtopic_pairs(grade, board)
+                        st.info(f"✅ Added '{topic}' to the topic list for Grade {grade} {board}")
                     
                     # Get previous questions for this user to avoid showing them again
                     previous_questions = get_user_previous_questions(user_name, grade, board, topic)
@@ -1011,6 +1092,8 @@ def main():
                                 st.session_state.coaching_complete = True
                                 st.session_state.coaching_active = False
                                 st.session_state.coaching_messages = []
+                                st.session_state.coaching_pending_response = False
+                                st.session_state.coaching_pending_question_data = None
                                 st.rerun()
                     
                     # Show coaching conversation in a popup/modal using st.dialog
@@ -1036,7 +1119,7 @@ def main():
                             st.caption("💬 Chat with your AI tutor to understand the concept better!")
                             st.divider()
                             
-                            # Display coaching messages
+                            # Display coaching messages FIRST (so user messages appear immediately)
                             if st.session_state.coaching_messages:
                                 for msg in st.session_state.coaching_messages:
                                     if msg["role"] == "coach":
@@ -1048,33 +1131,18 @@ def main():
                             else:
                                 st.info("Starting coaching session...")
                             
-                            # If coaching is complete, show the answer
-                            if st.session_state.coaching_complete:
-                                st.divider()
-                                st.success(f"✅ **Correct answer:** {chr(65+coaching_correct_answer)}. {coaching_options[coaching_correct_answer]}")
-                                if st.button("Close Coaching", type="primary", use_container_width=True, key="close_complete"):
-                                    st.session_state.coaching_active = False
-                                    st.rerun()
-                            else:
-                                st.divider()
-                                # Student response input
-                                student_response = st.chat_input("Type your response or question here...", key="coaching_chat_input")
-                                
-                                if student_response:
-                                    # Add student message
-                                    st.session_state.coaching_messages.append({
-                                        "role": "student",
-                                        "content": student_response
-                                    })
-                                    
-                                    # Get coaching response
-                                    with st.spinner("Coach is thinking..."):
+                            # Check if we need to fetch a pending coaching response AFTER displaying messages
+                            if st.session_state.coaching_pending_response and st.session_state.coaching_pending_question_data:
+                                pending_data = st.session_state.coaching_pending_question_data
+                                # Get coaching response
+                                with st.spinner("Coach is thinking..."):
+                                    try:
                                         coaching_response = get_coaching_response(
-                                            question=coaching_question,
-                                            options=coaching_options,
-                                            user_answer=coaching_user_answer,
-                                            correct_answer=coaching_correct_answer,
-                                            student_response=student_response,
+                                            question=pending_data["question"],
+                                            options=pending_data["options"],
+                                            user_answer=pending_data["user_answer"],
+                                            correct_answer=pending_data["correct_answer"],
+                                            student_response=pending_data["student_response"],
                                             conversation_history=st.session_state.coaching_messages
                                         )
                                         
@@ -1087,7 +1155,56 @@ def main():
                                             # Check if answer was revealed
                                             if "correct answer" in coaching_response.lower() or "answer is" in coaching_response.lower():
                                                 st.session_state.coaching_complete = True
+                                        else:
+                                            # If no response, add an error message
+                                            st.session_state.coaching_messages.append({
+                                                "role": "coach",
+                                                "content": "I apologize, but I'm having trouble responding. Please try again."
+                                            })
+                                    except Exception as e:
+                                        # Handle errors gracefully
+                                        st.session_state.coaching_messages.append({
+                                            "role": "coach",
+                                            "content": f"I encountered an error: {str(e)}. Please try again."
+                                        })
+                                
+                                # Clear pending flag after attempting to fetch response
+                                st.session_state.coaching_pending_response = False
+                                st.session_state.coaching_pending_question_data = None
+                                st.rerun()
+                            
+                            # If coaching is complete, show the answer
+                            if st.session_state.coaching_complete:
+                                st.divider()
+                                st.success(f"✅ **Correct answer:** {chr(65+coaching_correct_answer)}. {coaching_options[coaching_correct_answer]}")
+                                if st.button("Close Coaching", type="primary", use_container_width=True, key="close_complete"):
+                                    st.session_state.coaching_active = False
+                                    st.session_state.coaching_pending_response = False
+                                    st.session_state.coaching_pending_question_data = None
+                                    st.rerun()
+                            else:
+                                st.divider()
+                                # Student response input
+                                student_response = st.chat_input("Type your response or question here...", key="coaching_chat_input")
+                                
+                                if student_response:
+                                    # Add student message immediately
+                                    st.session_state.coaching_messages.append({
+                                        "role": "student",
+                                        "content": student_response
+                                    })
                                     
+                                    # Store question data for next render cycle
+                                    st.session_state.coaching_pending_response = True
+                                    st.session_state.coaching_pending_question_data = {
+                                        "question": coaching_question,
+                                        "options": coaching_options,
+                                        "user_answer": coaching_user_answer,
+                                        "correct_answer": coaching_correct_answer,
+                                        "student_response": student_response
+                                    }
+                                    
+                                    # Rerun immediately to show user's message
                                     st.rerun()
                                 
                                 # Options at the bottom
@@ -1099,6 +1216,8 @@ def main():
                                 with col2:
                                     if st.button("Close Coaching", key="close_coaching", use_container_width=True):
                                         st.session_state.coaching_active = False
+                                        st.session_state.coaching_pending_response = False
+                                        st.session_state.coaching_pending_question_data = None
                                         st.rerun()
                         
                         # Call the dialog function
