@@ -60,13 +60,13 @@ def save_user_history(history: Dict):
     except IOError as e:
         st.error(f"Error saving quiz history: {e}")
 
-def get_user_previous_questions(user_name: str, grade: int, board: str, topic: str) -> List[str]:
+def get_user_previous_questions(user_email: str, grade: int, board: str, topic: str) -> List[str]:
     """Get list of previous question texts for a user with same parameters."""
     history = load_user_history()
-    if user_name not in history:
+    if user_email not in history:
         return []
     
-    user_history = history[user_name]
+    user_history = history[user_email]
     previous_questions = []
     
     # Collect all questions from previous quizzes with same parameters
@@ -78,12 +78,12 @@ def get_user_previous_questions(user_name: str, grade: int, board: str, topic: s
     
     return previous_questions
 
-def save_user_quiz(user_name: str, grade: int, board: str, topic: str, questions: List[Dict]):
+def save_user_quiz(user_email: str, grade: int, board: str, topic: str, questions: List[Dict]):
     """Save generated questions for a user."""
     history = load_user_history()
     
-    if user_name not in history:
-        history[user_name] = {"quizzes": []}
+    if user_email not in history:
+        history[user_email] = {"quizzes": []}
     
     # Extract question texts for tracking
     question_texts = [q.get("question", "") for q in questions]
@@ -97,7 +97,7 @@ def save_user_quiz(user_name: str, grade: int, board: str, topic: str, questions
         "timestamp": datetime.now().isoformat()
     }
     
-    history[user_name]["quizzes"].append(quiz_entry)
+    history[user_email]["quizzes"].append(quiz_entry)
     save_user_history(history)
 
 def generate_questions(
@@ -106,7 +106,7 @@ def generate_questions(
     topic: str,
     num_questions: int,
     difficulty_distribution: Dict[str, int],
-    user_name: Optional[str] = None,
+    user_email: Optional[str] = None,
     previous_questions: Optional[List[str]] = None
 ) -> List[Dict]:
     """
@@ -119,7 +119,7 @@ def generate_questions(
         topic: Math topic
         num_questions: Total number of questions
         difficulty_distribution: Dictionary with Easy, Medium, Hard percentages
-        user_name: Optional user name for tracking
+        user_email: Optional user email for tracking
         previous_questions: Optional list of previous question texts the user has already seen
         
     Returns:
@@ -559,6 +559,11 @@ def render_error_reporting_ui(question: Dict, current_q_idx: int):
         # Call the dialog function
         error_report_dialog()
 
+def handle_coaching_dialog_dismiss():
+    """Callback function to handle when coaching dialog is dismissed (X button)."""
+    st.session_state.coaching_complete = True
+    st.session_state.coaching_active = False
+
 def initialize_session_state():
     """Initialize session state variables."""
     if "questions" not in st.session_state:
@@ -575,8 +580,10 @@ def initialize_session_state():
         st.session_state.show_feedback = False
     if "quiz_completed" not in st.session_state:
         st.session_state.quiz_completed = False
-    if "user_name" not in st.session_state:
-        st.session_state.user_name = ""
+    if "user_email" not in st.session_state:
+        st.session_state.user_email = ""
+    if "current_page" not in st.session_state:
+        st.session_state.current_page = "config"  # "config" or "quiz"
     if "coaching_active" not in st.session_state:
         st.session_state.coaching_active = False
     if "coaching_messages" not in st.session_state:
@@ -627,250 +634,217 @@ def reset_quiz():
     st.session_state.quiz_grade = None
     st.session_state.quiz_board = None
     st.session_state.quiz_topic = None
-    # Note: user_name is preserved on reset
+    # Note: user_email is preserved on reset
 
-def main():
-    st.set_page_config(page_title="Math Quiz Agent", page_icon="📚", layout="wide")
+def is_valid_email(email: str) -> bool:
+    """Basic email validation."""
+    import re
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return bool(re.match(pattern, email))
+
+def show_config_page():
+    """Display the configuration page (Page 1)."""
+    st.title("📚 Math Quiz Agent - Configuration")
+    st.markdown("Configure your quiz settings below and click 'Generate Quiz' to start!")
     
-    st.title("📚 Math Quiz Agent")
-    st.markdown("Generate and take personalized math quizzes based on your grade, board, and topic!")
+    # User email input
+    st.subheader("User Information")
+    user_email = st.text_input(
+        "Your Email", 
+        value=st.session_state.user_email, 
+        placeholder="Enter your email address",
+        help="We'll use this to track your quiz history"
+    )
     
-    # Initialize database on startup
-    initialize_database()
-    
-    initialize_session_state()
-    
-    # Sidebar for quiz configuration
-    with st.sidebar:
-        st.header("Quiz Configuration")
-        
-        # Determine if inputs should be disabled (during active quiz, but not when completed)
-        inputs_disabled = st.session_state.quiz_started and not st.session_state.quiz_completed
-        
-        # User name input
-        st.subheader("User Information")
-        user_name = st.text_input(
-            "Your Name", 
-            value=st.session_state.user_name, 
-            placeholder="Enter your name",
-            disabled=inputs_disabled
-        )
-        if user_name and not inputs_disabled:
-            # Check if name changed before updating
-        #    previous_name = st.session_state.get("user_name", "")
-            #if user_name != previous_name and previous_name and st.session_state.quiz_started:
-                # If name changed, reset quiz
-            #    reset_quiz()
-            st.session_state.user_name = user_name
-        elif not user_name and not inputs_disabled:
-            st.warning("⚠️ Please enter your name to start the quiz")
-        
-        st.divider()
-        
-        # Use stored values when disabled, otherwise use current selection
-        if inputs_disabled:
-            # Show stored quiz configuration values
-            grade = st.session_state.quiz_grade
-            board = st.session_state.quiz_board
-            topic = st.session_state.quiz_topic
-            # Display as read-only
-            st.info(f"**Current Quiz:**\n- Grade: {grade}\n- Board: {board}\n- Topic: {topic}")
-            st.info("ℹ️ Quiz in progress. Complete the quiz to modify settings.")
+    if user_email:
+        if is_valid_email(user_email):
+            st.session_state.user_email = user_email
+            st.success("✓ Valid email")
         else:
-            # Get stored values if they exist (for default values after quiz completion)
-            stored_grade = st.session_state.get("quiz_grade")
-            stored_board = st.session_state.get("quiz_board")
-            stored_topic = st.session_state.get("quiz_topic")
-            
-            # Grade selection - use stored grade as default if available
-            grade_options = list(range(6, 13))
-            grade_index = 0
-            if stored_grade is not None and stored_grade in grade_options:
-                grade_index = grade_options.index(stored_grade)
-            grade = st.selectbox("Grade", options=grade_options, index=grade_index)
-            
-            # Board selection - use stored board as default if available
-            board_options = ["CBSE", "ICSE", "IB"]
-            board_index = 0
-            if stored_board is not None and stored_board in board_options:
-                board_index = board_options.index(stored_board)
-            board = st.selectbox("Board", options=board_options, index=board_index)
-            
-            # Topic input with typeahead functionality
-            # Check if grade/board combination changed
-            current_key = f"{grade}_{board}"
-            if (st.session_state.current_grade_board_key is None or 
-                st.session_state.current_grade_board_key != current_key):
-                # Grade or board changed, reload topics
-                st.session_state.current_grade_board_key = current_key
-                st.session_state.available_topic_subtopics = get_topic_subtopic_pairs(grade, board)
-            
-            # Get available topic-subtopic pairs for typeahead
-            available_topic_subtopics = st.session_state.available_topic_subtopics
-            
-            # Show typeahead selectbox with prepopulated topic-subtopic pairs
-            # Add option for custom topic entry
-            topic_options = ["-- Enter Custom Topic --"] + available_topic_subtopics
-            
-            # Find index of stored topic if it exists
+            st.error("⚠️ Please enter a valid email address")
+            return
+    
+    st.divider()
+    
+    # Get stored values if they exist (for default values after quiz completion)
+    stored_grade = st.session_state.get("quiz_grade")
+    stored_board = st.session_state.get("quiz_board")
+    stored_topic = st.session_state.get("quiz_topic")
+    
+    # Grade selection - use stored grade as default if available
+    grade_options = list(range(6, 13))
+    grade_index = 0
+    if stored_grade is not None and stored_grade in grade_options:
+        grade_index = grade_options.index(stored_grade)
+    grade = st.selectbox("Grade", options=grade_options, index=grade_index)
+    
+    # Board selection - use stored board as default if available
+    board_options = ["CBSE", "ICSE", "IB"]
+    board_index = 0
+    if stored_board is not None and stored_board in board_options:
+        board_index = board_options.index(stored_board)
+    board = st.selectbox("Board", options=board_options, index=board_index)
+    
+    # Topic input with typeahead functionality
+    # Check if grade/board combination changed
+    current_key = f"{grade}_{board}"
+    if (st.session_state.current_grade_board_key is None or 
+        st.session_state.current_grade_board_key != current_key):
+        # Grade or board changed, reload topics
+        st.session_state.current_grade_board_key = current_key
+        st.session_state.available_topic_subtopics = get_topic_subtopic_pairs(grade, board)
+    
+    # Get available topic-subtopic pairs for typeahead
+    available_topic_subtopics = st.session_state.available_topic_subtopics
+    
+    # Show typeahead selectbox with prepopulated topic-subtopic pairs
+    # Add option for custom topic entry
+    topic_options = ["-- Enter Custom Topic --"] + available_topic_subtopics
+    
+    # Find index of stored topic if it exists
+    selected_index = 0
+    if stored_topic:
+        # Try to find matching topic-subtopic pair
+        # Check both topic and subtopic since we now use subtopic for quiz generation
+        found = False
+        for idx, option in enumerate(available_topic_subtopics):
+            parsed_topic = parse_topic_from_pair(option)
+            parsed_subtopic = parse_subtopic_from_pair(option)
+            if parsed_topic.lower() == stored_topic.lower() or parsed_subtopic.lower() == stored_topic.lower():
+                selected_index = idx + 1
+                found = True
+                break
+        if not found:
+            # Custom topic, show it in the input
             selected_index = 0
-            if stored_topic:
-                # Try to find matching topic-subtopic pair
-                # Check both topic and subtopic since we now use subtopic for quiz generation
-                found = False
-                for idx, option in enumerate(available_topic_subtopics):
-                    parsed_topic = parse_topic_from_pair(option)
-                    parsed_subtopic = parse_subtopic_from_pair(option)
-                    if parsed_topic.lower() == stored_topic.lower() or parsed_subtopic.lower() == stored_topic.lower():
-                        selected_index = idx + 1
-                        found = True
-                        break
-                if not found:
-                    # Custom topic, show it in the input
-                    selected_index = 0
+    
+    selected_topic_option = st.selectbox(
+        "Math Topic",
+        options=topic_options,
+        index=selected_index,
+        help="Select from prepopulated topics/subtopics or choose 'Enter Custom Topic' to type your own"
+    )
+    
+    # Handle topic selection
+    if selected_topic_option == "-- Enter Custom Topic --":
+        # Show text input for custom topic
+        custom_topic = st.text_input(
+            "Enter Custom Topic",
+            value=stored_topic if stored_topic else "",
+            placeholder="Type your custom topic here"
+        )
+        topic = custom_topic.strip() if custom_topic else ""
+    else:
+        # Parse subtopic from "Topic - Subtopic" format for quiz generation
+        # Use subtopic instead of topic for more specific quiz generation
+        topic = parse_subtopic_from_pair(selected_topic_option)
+    
+    st.divider()
+    
+    # Difficulty distribution
+    st.subheader("Difficulty Distribution")
+    easy_pct = st.slider("Easy (%)", min_value=0, max_value=100, value=40, step=5)
+    medium_pct = st.slider("Medium (%)", min_value=0, max_value=100, value=40, step=5)
+    hard_pct = st.slider("Hard (%)", min_value=0, max_value=100, value=20, step=5)
+    
+    # Calculate total
+    total_pct = easy_pct + medium_pct + hard_pct
+    
+    # Validation
+    if total_pct != 100:
+        st.error(f"⚠️ Total must be 100% (Current: {total_pct}%)")
+        can_start = False
+    else:
+        st.success(f"✓ Total: {total_pct}%")
+        can_start = True
+    
+    difficulty_distribution = {
+        "Easy": easy_pct,
+        "Medium": medium_pct,
+        "Hard": hard_pct
+    }
+    
+    # Number of questions
+    num_questions = st.number_input("Number of Questions", min_value=1, max_value=20, value=10, step=1)
+    
+    st.divider()
+    
+    # Generate quiz button
+    if st.button("Generate Quiz", type="primary", disabled=not can_start or not topic or not user_email or not is_valid_email(user_email), use_container_width=True):
+        if not user_email:
+            st.error("Please enter your email")
+        elif not is_valid_email(user_email):
+            st.error("Please enter a valid email address")
+        elif not topic:
+            st.error("Please enter a math topic")
+        else:
+            # Reset quiz if there's an existing quiz (to start fresh)
+            if st.session_state.quiz_started:
+                reset_quiz()
             
-            selected_topic_option = st.selectbox(
-                "Math Topic",
-                options=topic_options,
-                index=selected_index,
-                help="Select from prepopulated topics/subtopics or choose 'Enter Custom Topic' to type your own"
+            # Save custom topic if it's not in the prepopulated list
+            # Check if topic exists in any of the topic-subtopic pairs
+            # Since we're using subtopic for quiz generation, check both topic and subtopic
+            topic_exists = any(
+                parse_topic_from_pair(pair).lower() == topic.lower() or
+                parse_subtopic_from_pair(pair).lower() == topic.lower()
+                for pair in st.session_state.available_topic_subtopics
             )
             
-            # Handle topic selection
-            if selected_topic_option == "-- Enter Custom Topic --":
-                # Show text input for custom topic
-                custom_topic = st.text_input(
-                    "Enter Custom Topic",
-                    value=stored_topic if stored_topic else "",
-                    placeholder="Type your custom topic here"
+            if topic and not topic_exists:
+                # Add as a topic (without subtopics) since user entered it as a custom topic
+                add_topic(grade, board, topic)
+                # Update available topic-subtopic pairs list
+                st.session_state.available_topic_subtopics = get_topic_subtopic_pairs(grade, board)
+                st.info(f"✅ Added '{topic}' to the topic list for Grade {grade} {board}")
+            
+            # Get previous questions for this user to avoid showing them again
+            previous_questions = get_user_previous_questions(user_email, grade, board, topic)
+            
+            # Check database for existing questions
+            total_available = count_questions(grade, board, topic)
+            
+            if previous_questions:
+                st.info(f"📝 You've taken {len([q for q in load_user_history().get(user_email, {}).get('quizzes', []) if q.get('grade') == grade and q.get('board') == board and q.get('topic', '').lower() == topic.lower()])} quiz(zes) on this topic. Will show you new questions!")
+            
+            with st.spinner("Generating questions..."):
+                questions = generate_questions(
+                    grade=grade,
+                    board=board,
+                    topic=topic,
+                    num_questions=num_questions,
+                    difficulty_distribution=difficulty_distribution,
+                    user_email=user_email,
+                    previous_questions=previous_questions
                 )
-                topic = custom_topic.strip() if custom_topic else ""
-            else:
-                # Parse subtopic from "Topic - Subtopic" format for quiz generation
-                # Use subtopic instead of topic for more specific quiz generation
-                topic = parse_subtopic_from_pair(selected_topic_option)
-        
-        # Difficulty distribution
-        if not inputs_disabled:
-            st.subheader("Difficulty Distribution")
-            easy_pct = st.slider("Easy (%)", min_value=0, max_value=100, value=40, step=5)
-            medium_pct = st.slider("Medium (%)", min_value=0, max_value=100, value=40, step=5)
-            hard_pct = st.slider("Hard (%)", min_value=0, max_value=100, value=20, step=5)
-            
-            # Calculate total
-            total_pct = easy_pct + medium_pct + hard_pct
-            
-            # Validation
-            if total_pct != 100:
-                st.error(f"⚠️ Total must be 100% (Current: {total_pct}%)")
-                can_start = False
-            else:
-                st.success(f"✓ Total: {total_pct}%")
-                can_start = True
-            
-            difficulty_distribution = {
-                "Easy": easy_pct,
-                "Medium": medium_pct,
-                "Hard": hard_pct
-            }
-            
-            # Number of questions
-            num_questions = st.number_input("Number of Questions", min_value=1, max_value=20, value=10, step=1)
-        else:
-            # Set default values when disabled (won't be used anyway)
-            can_start = False
-            difficulty_distribution = {"Easy": 40, "Medium": 40, "Hard": 20}
-            num_questions = 10
-        
-        # Generate quiz button
-        if not inputs_disabled:
-            if st.button("Generate Quiz", type="primary", disabled=not can_start or not topic or not user_name):
-                if not user_name:
-                    st.error("Please enter your name")
-                elif not topic:
-                    st.error("Please enter a math topic")
+                
+                if questions:
+                    st.session_state.questions = questions
+                    st.session_state.quiz_started = True
+                    st.session_state.current_question_index = 0
+                    st.session_state.user_answers = []
+                    st.session_state.score = 0
+                    st.session_state.show_feedback = False
+                    st.session_state.quiz_completed = False
+                    # Store quiz configuration for error reporting
+                    st.session_state.quiz_grade = grade
+                    st.session_state.quiz_board = board
+                    st.session_state.quiz_topic = topic
+                    
+                    # Save quiz to user history
+                    save_user_quiz(user_email, grade, board, topic, questions)
+                    
+                    # Switch to quiz page
+                    st.session_state.current_page = "quiz"
+                    st.rerun()
                 else:
-                    # Reset quiz if there's an existing quiz (to start fresh)
-                    if st.session_state.quiz_started:
-                        reset_quiz()
-                    
-                    # Save custom topic if it's not in the prepopulated list
-                    # Check if topic exists in any of the topic-subtopic pairs
-                    # Since we're using subtopic for quiz generation, check both topic and subtopic
-                    topic_exists = any(
-                        parse_topic_from_pair(pair).lower() == topic.lower() or
-                        parse_subtopic_from_pair(pair).lower() == topic.lower()
-                        for pair in st.session_state.available_topic_subtopics
-                    )
-                    
-                    if topic and not topic_exists:
-                        # Add as a topic (without subtopics) since user entered it as a custom topic
-                        add_topic(grade, board, topic)
-                        # Update available topic-subtopic pairs list
-                        st.session_state.available_topic_subtopics = get_topic_subtopic_pairs(grade, board)
-                        st.info(f"✅ Added '{topic}' to the topic list for Grade {grade} {board}")
-                    
-                    # Get previous questions for this user to avoid showing them again
-                    previous_questions = get_user_previous_questions(user_name, grade, board, topic)
-                    
-                    # Check database for existing questions
-                    total_available = count_questions(grade, board, topic)
-                    
-                    if previous_questions:
-                        st.info(f"📝 You've taken {len([q for q in load_user_history().get(user_name, {}).get('quizzes', []) if q.get('grade') == grade and q.get('board') == board and q.get('topic', '').lower() == topic.lower()])} quiz(zes) on this topic. Will show you new questions!")
-                    
-                    with st.spinner("Generating questions..."):
-                        questions = generate_questions(
-                            grade=grade,
-                            board=board,
-                            topic=topic,
-                            num_questions=num_questions,
-                            difficulty_distribution=difficulty_distribution,
-                            user_name=user_name,
-                            previous_questions=previous_questions
-                        )
-                        
-                        
-                        if questions:
-                            st.session_state.questions = questions
-                            st.session_state.quiz_started = True
-                            st.session_state.current_question_index = 0
-                            st.session_state.user_answers = []
-                            st.session_state.score = 0
-                            st.session_state.show_feedback = False
-                            st.session_state.quiz_completed = False
-                            # Store quiz configuration for error reporting
-                            st.session_state.quiz_grade = grade
-                            st.session_state.quiz_board = board
-                            st.session_state.quiz_topic = topic
-                            
-                            # Save quiz to user history
-                            save_user_quiz(user_name, grade, board, topic, questions)
-                            
-                            st.success(f"Generated {len(questions)} questions!")
-                            st.rerun()
-                        else:
-                            st.error("Failed to generate questions. Please try again.")
-        
-        # Reset quiz button
-        if st.session_state.quiz_started:
-            if st.button("Reset Quiz"):
-                reset_quiz()
-                st.rerun()
+                    st.error("Failed to generate questions. Please try again.")
+
+def show_quiz_page():
+    """Display the quiz page (Page 2)."""
+    st.title("📚 Math Quiz Agent - Quiz")
     
-    # Main quiz area
-    if not st.session_state.quiz_started:
-        st.info("👈 Configure your quiz in the sidebar and click 'Generate Quiz' to start!")
-        st.markdown("""
-        ### How to use:
-        1. Select your grade (6-12)
-        2. Choose your education board (CBSE, ICSE, or IB)
-        3. Enter a math topic
-        4. Adjust difficulty distribution (must total 100%)
-        5. Set the number of questions
-        6. Click "Generate Quiz"
-        """)
-    elif st.session_state.quiz_completed:
+    if st.session_state.quiz_completed:
         # Show final results
         st.header("🎉 Quiz Completed!")
         
@@ -923,9 +897,64 @@ def main():
                 if not is_correct and not is_reported:
                     st.info(f"Correct answer: {chr(65+correct_answer_idx)}. {question['options'][correct_answer_idx]}")
         
-        if st.button("Take Another Quiz"):
-            reset_quiz()
-            st.rerun()
+        st.divider()
+        
+        # Two action buttons
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Take New Quiz", type="primary", use_container_width=True):
+                reset_quiz()
+                st.session_state.current_page = "config"
+                st.rerun()
+        with col2:
+            if st.button("10 More Questions on Same Topic", type="secondary", use_container_width=True):
+                # Generate 10 more questions on the same topic
+                user_email = st.session_state.user_email
+                grade = st.session_state.quiz_grade
+                board = st.session_state.quiz_board
+                topic = st.session_state.quiz_topic
+                
+                # Get previous questions including the ones just answered
+                previous_questions = get_user_previous_questions(user_email, grade, board, topic)
+                # Also add current questions to avoid duplicates
+                current_question_texts = [q.get("question", "") for q in st.session_state.questions]
+                previous_questions.extend(current_question_texts)
+                
+                # Use same difficulty distribution as before (default if not stored)
+                difficulty_distribution = {"Easy": 40, "Medium": 40, "Hard": 20}
+                
+                with st.spinner("Generating 10 more questions..."):
+                    new_questions = generate_questions(
+                        grade=grade,
+                        board=board,
+                        topic=topic,
+                        num_questions=10,
+                        difficulty_distribution=difficulty_distribution,
+                        user_email=user_email,
+                        previous_questions=previous_questions
+                    )
+                    
+                    if new_questions:
+                        # Reset quiz state but keep configuration
+                        st.session_state.questions = new_questions
+                        st.session_state.current_question_index = 0
+                        st.session_state.user_answers = []
+                        st.session_state.score = 0
+                        st.session_state.show_feedback = False
+                        st.session_state.quiz_completed = False
+                        st.session_state.quiz_started = True
+                        st.session_state.reported_questions = set()
+                        st.session_state.submitted_reports = set()
+                        st.session_state.report_verification_results = {}
+                        st.session_state.error_report_active = False
+                        
+                        # Save new quiz to user history
+                        save_user_quiz(user_email, grade, board, topic, new_questions)
+                        
+                        st.success(f"Generated {len(new_questions)} more questions!")
+                        st.rerun()
+                    else:
+                        st.error("Failed to generate more questions. Please try again.")
     
     else:
         # Show current question
@@ -1100,7 +1129,8 @@ def main():
                     if st.session_state.coaching_active:
                         # Use variables from outer scope - they're available here
                         # Define the dialog function with closure over the question variables
-                        @st.dialog("🎓 Coaching Session")
+                        # Use on_dismiss callback to handle X button close
+                        @st.dialog("🎓 Coaching Session", on_dismiss=handle_coaching_dialog_dismiss)
                         def coaching_dialog():
                             # Use variables from outer scope (question, user_answer, correct_answer_idx)
                             # These are captured in the closure
@@ -1216,6 +1246,7 @@ def main():
                                 with col2:
                                     if st.button("Close Coaching", key="close_coaching", use_container_width=True):
                                         st.session_state.coaching_active = False
+                                        st.session_state.coaching_complete = True  # Set complete so buttons appear
                                         st.session_state.coaching_pending_response = False
                                         st.session_state.coaching_pending_question_data = None
                                         st.rerun()
@@ -1272,6 +1303,33 @@ def main():
                             if current_q_idx not in st.session_state.reported_questions:
                                 st.session_state.score += points
                             st.rerun()
+        else:
+            # Quiz hasn't started yet - shouldn't happen on quiz page, but handle gracefully
+            st.info("No quiz started. Please go back to configuration page.")
+            if st.button("Go to Configuration Page"):
+                st.session_state.current_page = "config"
+                st.rerun()
+
+def main():
+    st.set_page_config(page_title="Math Quiz Agent", page_icon="📚", layout="wide")
+    
+    # Initialize database on startup
+    initialize_database()
+    
+    initialize_session_state()
+    
+    # Route to appropriate page based on current_page state
+    if st.session_state.current_page == "quiz":
+        # Only show quiz page if quiz has been started
+        if st.session_state.quiz_started:
+            show_quiz_page()
+        else:
+            # If quiz hasn't started but we're on quiz page, go back to config
+            st.session_state.current_page = "config"
+            st.rerun()
+    else:
+        # Default to config page
+        show_config_page()
 
 if __name__ == "__main__":
     main()
