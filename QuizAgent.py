@@ -645,46 +645,78 @@ def is_valid_email(email: str) -> bool:
 def show_config_page():
     """Display the configuration page (Page 1)."""
     st.title("📚 Math Quiz Agent - Configuration")
-    st.markdown("Configure your quiz settings below and click 'Generate Quiz' to start!")
-    
-    # User email input
-    st.subheader("User Information")
-    user_email = st.text_input(
-        "Your Email", 
-        value=st.session_state.user_email, 
-        placeholder="Enter your email address",
-        help="We'll use this to track your quiz history"
-    )
-    
-    if user_email:
-        if is_valid_email(user_email):
-            st.session_state.user_email = user_email
-            st.success("✓ Valid email")
-        else:
-            st.error("⚠️ Please enter a valid email address")
-            return
-    
-    st.divider()
+    st.caption("Configure your quiz settings below and click 'Generate Quiz' to start!")
     
     # Get stored values if they exist (for default values after quiz completion)
     stored_grade = st.session_state.get("quiz_grade")
     stored_board = st.session_state.get("quiz_board")
     stored_topic = st.session_state.get("quiz_topic")
     
-    # Grade selection - use stored grade as default if available
-    grade_options = list(range(6, 13))
-    grade_index = 0
-    if stored_grade is not None and stored_grade in grade_options:
-        grade_index = grade_options.index(stored_grade)
-    grade = st.selectbox("Grade", options=grade_options, index=grade_index)
+    # Create 3 columns: left spacer (25%), center (50%), right spacer (25%)
+    col_left, col_center, col_right = st.columns([1, 2, 1])
     
-    # Board selection - use stored board as default if available
-    board_options = ["CBSE", "ICSE", "IB"]
-    board_index = 0
-    if stored_board is not None and stored_board in board_options:
-        board_index = board_options.index(stored_board)
-    board = st.selectbox("Board", options=board_options, index=board_index)
+    with col_center:
+        # User email input
+        user_email = st.text_input(
+            "Your Email", 
+            value=st.session_state.user_email, 
+            placeholder="Enter your email address",
+            help="We'll use this to track your quiz history"
+        )
+        
+        if user_email:
+            if is_valid_email(user_email):
+                st.session_state.user_email = user_email
+                st.caption("✓ Valid email")
+            else:
+                st.error("⚠️ Please enter a valid email address")
+                return
+        
+        # Grade and Board in same row
+        col_grade, col_board = st.columns(2)
+        with col_grade:
+            # Grade selection - use stored grade as default if available
+            grade_options = list(range(6, 13))
+            grade_index = 0
+            if stored_grade is not None and stored_grade in grade_options:
+                grade_index = grade_options.index(stored_grade)
+            grade = st.selectbox("Grade", options=grade_options, index=grade_index)
+        
+        with col_board:
+            # Board selection - use stored board as default if available
+            board_options = ["CBSE", "ICSE", "IB"]
+            board_index = 0
+            if stored_board is not None and stored_board in board_options:
+                board_index = board_options.index(stored_board)
+            board = st.selectbox("Board", options=board_options, index=board_index)
+        
+        # Difficulty distribution
+        st.markdown("**Difficulty Distribution**")
+        easy_pct = st.slider("Easy (%)", min_value=0, max_value=100, value=40, step=5)
+        medium_pct = st.slider("Medium (%)", min_value=0, max_value=100, value=40, step=5)
+        hard_pct = st.slider("Hard (%)", min_value=0, max_value=100, value=20, step=5)
+        
+        # Calculate total
+        total_pct = easy_pct + medium_pct + hard_pct
+        
+        # Validation
+        if total_pct != 100:
+            st.error(f"⚠️ Total must be 100% (Current: {total_pct}%)")
+            can_start = False
+        else:
+            st.caption(f"✓ Total: {total_pct}%")
+            can_start = True
+        
+        difficulty_distribution = {
+            "Easy": easy_pct,
+            "Medium": medium_pct,
+            "Hard": hard_pct
+        }
+        
+        # Number of questions
+        num_questions = st.number_input("Number of Questions", min_value=1, max_value=20, value=10, step=1)
     
+    # Math Topic section - full width, last entry
     # Topic input with typeahead functionality
     # Check if grade/board combination changed
     current_key = f"{grade}_{board}"
@@ -697,77 +729,132 @@ def show_config_page():
     # Get available topic-subtopic pairs for typeahead
     available_topic_subtopics = st.session_state.available_topic_subtopics
     
-    # Show typeahead selectbox with prepopulated topic-subtopic pairs
-    # Add option for custom topic entry
-    topic_options = ["-- Enter Custom Topic --"] + available_topic_subtopics
+    # Initialize session state for topic search
+    if "topic_search_text" not in st.session_state:
+        # Initialize with stored topic if available, otherwise empty
+        if stored_topic:
+            # Try to find the full topic-subtopic pair for display
+            found_pair = None
+            for option in available_topic_subtopics:
+                parsed_topic = parse_topic_from_pair(option)
+                parsed_subtopic = parse_subtopic_from_pair(option)
+                if parsed_topic.lower() == stored_topic.lower() or parsed_subtopic.lower() == stored_topic.lower():
+                    found_pair = option
+                    break
+            st.session_state.topic_search_text = found_pair if found_pair else stored_topic
+        else:
+            st.session_state.topic_search_text = ""
     
-    # Find index of stored topic if it exists
-    selected_index = 0
-    if stored_topic:
-        # Try to find matching topic-subtopic pair
-        # Check both topic and subtopic since we now use subtopic for quiz generation
-        found = False
-        for idx, option in enumerate(available_topic_subtopics):
-            parsed_topic = parse_topic_from_pair(option)
-            parsed_subtopic = parse_subtopic_from_pair(option)
-            if parsed_topic.lower() == stored_topic.lower() or parsed_subtopic.lower() == stored_topic.lower():
-                selected_index = idx + 1
-                found = True
-                break
-        if not found:
-            # Custom topic, show it in the input
-            selected_index = 0
+    if "selected_topic_from_suggestions" not in st.session_state:
+        st.session_state.selected_topic_from_suggestions = None
     
-    selected_topic_option = st.selectbox(
-        "Math Topic",
-        options=topic_options,
-        index=selected_index,
-        help="Select from prepopulated topics/subtopics or choose 'Enter Custom Topic' to type your own"
+    # Text input for topic search
+    topic_search = st.text_input(
+        "Type your Math topic",
+        value=st.session_state.topic_search_text,
+        placeholder="Type to search topics...",
+        help="Start typing to search topics. Select a suggestion below or choose 'Other' for custom topic.",
+        key="topic_search_input"
     )
     
+    # Update search text in session state
+    st.session_state.topic_search_text = topic_search
+    
+    # Filter topics based on search text
+    search_lower = topic_search.lower().strip() if topic_search else ""
+    filtered_topics = []
+    
+    if search_lower:
+        for option in available_topic_subtopics:
+            parsed_topic = parse_topic_from_pair(option)
+            parsed_subtopic = parse_subtopic_from_pair(option)
+            option_lower = option.lower()
+            if (search_lower in parsed_topic.lower() or 
+                search_lower in parsed_subtopic.lower() or
+                search_lower in option_lower):
+                filtered_topics.append(option)
+    else:
+        # If no search text, show all topics
+        filtered_topics = available_topic_subtopics
+    
+    # Prepare suggestions list (always include "Other" at the end)
+    suggestions = filtered_topics + ["Other"]
+    
+    # Show suggestions dropdown - always show if there are suggestions
+    selected_topic_option = None
+    if suggestions:
+        # Find if current search text exactly matches a suggestion
+        exact_match_index = None
+        for idx, suggestion in enumerate(suggestions):
+            if suggestion != "Other" and suggestion.lower() == search_lower:
+                exact_match_index = idx
+                break
+        
+        # Show selectbox with suggestions
+        selected_topic_option = st.selectbox(
+            "Suggestions (select from below)",
+            options=suggestions,
+            index=exact_match_index if exact_match_index is not None else 0,
+            help="Select a topic from the suggestions above",
+            key="topic_suggestions_selectbox"
+        )
+        
+        # If user selected something from suggestions, update search text
+        if selected_topic_option and selected_topic_option != "Other":
+            st.session_state.topic_search_text = selected_topic_option
+            st.session_state.selected_topic_from_suggestions = selected_topic_option
+    
     # Handle topic selection
-    if selected_topic_option == "-- Enter Custom Topic --":
+    topic = ""
+    if selected_topic_option == "Other":
         # Show text input for custom topic
+        # Use the search text if it's not a known topic, otherwise use stored topic
+        custom_value = ""
+        if topic_search and topic_search not in available_topic_subtopics:
+            custom_value = topic_search
+        elif stored_topic:
+            # Check if stored topic is not in the available topics
+            topic_in_list = any(
+                parse_topic_from_pair(opt).lower() == stored_topic.lower() or
+                parse_subtopic_from_pair(opt).lower() == stored_topic.lower()
+                for opt in available_topic_subtopics
+            )
+            if not topic_in_list:
+                custom_value = stored_topic
+        
         custom_topic = st.text_input(
             "Enter Custom Topic",
-            value=stored_topic if stored_topic else "",
-            placeholder="Type your custom topic here"
+            value=custom_value,
+            placeholder="Type your custom topic here",
+            key="custom_topic_input"
         )
         topic = custom_topic.strip() if custom_topic else ""
-    else:
+        # Update search text if custom topic is entered
+        if topic:
+            st.session_state.topic_search_text = topic
+    elif selected_topic_option and selected_topic_option != "Other":
         # Parse subtopic from "Topic - Subtopic" format for quiz generation
         # Use subtopic instead of topic for more specific quiz generation
         topic = parse_subtopic_from_pair(selected_topic_option)
-    
-    st.divider()
-    
-    # Difficulty distribution
-    st.subheader("Difficulty Distribution")
-    easy_pct = st.slider("Easy (%)", min_value=0, max_value=100, value=40, step=5)
-    medium_pct = st.slider("Medium (%)", min_value=0, max_value=100, value=40, step=5)
-    hard_pct = st.slider("Hard (%)", min_value=0, max_value=100, value=20, step=5)
-    
-    # Calculate total
-    total_pct = easy_pct + medium_pct + hard_pct
-    
-    # Validation
-    if total_pct != 100:
-        st.error(f"⚠️ Total must be 100% (Current: {total_pct}%)")
-        can_start = False
-    else:
-        st.success(f"✓ Total: {total_pct}%")
-        can_start = True
-    
-    difficulty_distribution = {
-        "Easy": easy_pct,
-        "Medium": medium_pct,
-        "Hard": hard_pct
-    }
-    
-    # Number of questions
-    num_questions = st.number_input("Number of Questions", min_value=1, max_value=20, value=10, step=1)
-    
-    st.divider()
+    elif search_lower and not selected_topic_option:
+        # This shouldn't happen since we always show suggestions, but handle it anyway
+        # Check if search text exactly matches a topic
+        exact_match = None
+        for option in available_topic_subtopics:
+            parsed_topic = parse_topic_from_pair(option)
+            parsed_subtopic = parse_subtopic_from_pair(option)
+            if (parsed_topic.lower() == search_lower or 
+                parsed_subtopic.lower() == search_lower or
+                option.lower() == search_lower):
+                exact_match = option
+                break
+        
+        if exact_match:
+            topic = parse_subtopic_from_pair(exact_match)
+            st.session_state.topic_search_text = exact_match
+        else:
+            # No exact match - treat as custom topic (user needs to select "Other")
+            topic = ""
     
     # Generate quiz button
     if st.button("Generate Quiz", type="primary", disabled=not can_start or not topic or not user_email or not is_valid_email(user_email), use_container_width=True):
